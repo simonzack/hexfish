@@ -228,7 +228,12 @@ script = "".join(scriptname.split(sep)[-1:])
 path = sep.join(scriptname.split(sep)[:-1])
 sys.path.insert(1,path)
 
-SCRIPTCHKSUM = hashlib.sha1(open(scriptname,'rb').read()).hexdigest()
+try:
+    SCRIPTCHKSUM = hashlib.sha1(open(scriptname,'rb').read()).hexdigest()
+except OSError:
+    print("\0034** Could not get the source file's checksum.")
+    SCRIPTCHKSUM = ''
+
 REQUIRESETUP = False
 
 try:
