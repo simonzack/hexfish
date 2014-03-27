@@ -1601,9 +1601,9 @@ def int2bytes(n):
         return '\x00'
     b = []
     while n:
-        b.insert(0,chr(n % 256))
+        b.insert(0,n%256)
         n //= 256
-    return "".join(b)
+    return bytes(b)
 
 
 def bytes2int(b):
@@ -1611,7 +1611,7 @@ def bytes2int(b):
     n = 0
     for p in b:
         n *= 256
-        n += ord(p)
+        n += p
     return n
 
 def padto(msg, length):
