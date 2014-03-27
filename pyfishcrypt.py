@@ -994,7 +994,7 @@ class XChatCrypt:
             decrypt_func = blowcrypt_unpack
 
         try:
-            b = decrypt_clz(key.key)
+            b = decrypt_clz(key.key.encode())
             #if msg[-2:-1] == " ":
             #   msg = msg[:-2]
             ret = decrypt_func(msg, b)
@@ -1913,7 +1913,9 @@ class DH1080Ctx:
                 break
 
 def dh1080_pack(ctx):
-    """."""
+    """
+    Uses strings as designed to be human readable in irc.
+    """
     if ctx.state == 0:
         ctx.state = 1
         cmd = "DH1080_INIT"
