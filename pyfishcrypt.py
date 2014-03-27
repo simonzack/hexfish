@@ -622,12 +622,13 @@ class XChatCrypt:
                 print("%sUnencrypted Key Storage loaded" % (COLOR['bpurple'],))
             except pickle.UnpicklingError:
                 ## ignore if file is invalid
+                data = data.decode('utf-8', 'ignore')
                 if data.startswith("+OK *"):
                     self.status['CRYPTDB'] = True
                     if self.status['DBPASSWD']:
                         try:
                             algo = BlowfishCBC(self.status['DBPASSWD'])
-                            decrypted = mircryption_cbc_unpack(data,algo)
+                            decrypted = mircryption_cbc_unpack(data,algo).encode()
                             db = pickle.loads(decrypted)
                             print("%sEncrypted Key Storage loaded" % (COLOR['green'],))
                         except pickle.UnpicklingError:
@@ -687,7 +688,7 @@ class XChatCrypt:
             hnd = open(os.path.join(path,'fish3.pickle'),'wb')
             if self.status['DBPASSWD']:
                 algo = BlowfishCBC(self.status['DBPASSWD'])
-                encrypted = mircryption_cbc_pack(data,algo)
+                encrypted = mircryption_cbc_pack(data.decode('utf-8', 'ignore'), algo).encode()
                 data = encrypted
                 self.status['CRYPTDB'] = True
             else:
