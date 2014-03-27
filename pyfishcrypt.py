@@ -161,16 +161,16 @@
 #      + fixed notice in channel not send to user
 #
 #   * 3.06:
-#	   + support for /msg /msg+ /notice /notice+ (trubo)
+#      + support for /msg /msg+ /notice /notice+ (trubo)
 #
 #   * 3.04:
-#	   + new lock design (by target) (trubo)
+#      + new lock design (by target) (trubo)
 #
 #   * 3.01:
-#	   + change switches to be compatible with fish.secure.la/xchat/FiSH-XChat.txt (trubo)
+#      + change switches to be compatible with fish.secure.la/xchat/FiSH-XChat.txt (trubo)
 #
-#	* 3.0:
-#	   + rewritten to class XChatCrypt (trubo)
+#   * 3.0:
+#      + rewritten to class XChatCrypt (trubo)
 #
 #   * 2.0:
 #      + Suport network mask in /key command
@@ -318,7 +318,7 @@ class SecretKey(object):
     def __str__(self):
         return "%s@%s" % self.keyname
     def __repr__(self):
-	return "%s" % (self.key)
+    return "%s" % (self.key)
 
 
 def proxyload(_thread,_useproxy,doExtra):
@@ -996,7 +996,7 @@ class XChatCrypt:
         try:
             b = decrypt_clz(key.key)
             #if msg[-2:-1] == " ":
-            #	msg = msg[:-2]
+            #   msg = msg[:-2]
             ret = decrypt_func(msg, b)
         except MalformedError:
             try:
