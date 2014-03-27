@@ -318,7 +318,7 @@ class SecretKey(object):
     def __str__(self):
         return "%s@%s" % self.keyname
     def __repr__(self):
-    return "%s" % (self.key)
+        return "%s" % (self.key)
 
 
 def proxyload(_thread,_useproxy,doExtra):
