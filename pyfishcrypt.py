@@ -1600,7 +1600,7 @@ def int2bytes(n):
     b = []
     while n:
         b.insert(0,chr(n % 256))
-        n /= 256
+        n //= 256
     return "".join(b)
 
 
@@ -1895,7 +1895,7 @@ class DH1080Ctx:
 
         bits = 1080
         while True:
-            self.private = bytes2int(os.urandom(bits/8))
+            self.private = bytes2int(os.urandom(bits//8))
             self.public = pow(g_dh1080, self.private, p_dh1080)
             if 2 <= self.public <= p_dh1080 - 1 and \
                dh_validate_public(self.public, q_dh1080, p_dh1080) == 1:
