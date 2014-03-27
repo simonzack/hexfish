@@ -1838,7 +1838,7 @@ def dh1080_b64decode(s):
     b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     buf = [0]*256
     for i in range(64):
-        buf[b64[i]] = i
+        buf[ord(b64[i])] = i
 
     l = len(s)
     if l < 2:
