@@ -256,11 +256,8 @@ except ImportError:
     except ImportError:
         import platform
         print("\002\0034No Blowfish implementation")
-        if not isWindows:
-            print("This module requires PyCrypto / The Python Cryptographic Toolkit.")
-            print("Get it from http://www.dlitz.net/software/pycrypto/. or")
-        else:
-            path = path.replace(sep,sep*2)
+        print("This module requires PyCrypto / The Python Cryptographic Toolkit.")
+        print("Get it from http://www.dlitz.net/software/pycrypto/ or http://www.voidspace.org.uk/python/modules.shtml#pycrypto")
         print("Download Python only Blowfish at %s" % PYBLOWFISHURL)
         print("or type \002/FISHSETUP\002 for automatic install of that")
 
