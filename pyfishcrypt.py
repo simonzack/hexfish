@@ -364,8 +364,8 @@ def proxyload(_thread,_useproxy,do_extra):
     _thread(urllib,do_extra)
 
 def destroy_object(_):
-    global loadObj
-    del loadObj
+    global load_obj
+    del load_obj
     return False
 
 class XChatCrypt:
@@ -2012,6 +2012,6 @@ if REQUIRESETUP:
 
     xchat.hook_command('FISHSETUP', fishsetup)
 else:
-    loadObj = XChatCrypt()
+    load_obj = XChatCrypt()
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4
