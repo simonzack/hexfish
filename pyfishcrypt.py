@@ -1926,7 +1926,7 @@ def dh1080_unpack(msg, ctx):
     if not msg.startswith("DH1080_"):
         raise ValueError
 
-    invalidmsg = "Key does nottmvalidate per RFC 2631. This check is not performed by any DH1080 implementation, so we use the key anyway. See RFC 2785 for more details."
+    invalidmsg = "Key does not conform to RFC 2631. This check is not performed by any DH1080 implementation, so we use the key anyway. See RFC 2631 & RFC 2785 for more details."
 
     if ctx.state == 0:
         if not msg.startswith("DH1080_INIT "):
