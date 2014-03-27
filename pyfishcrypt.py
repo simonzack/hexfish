@@ -279,7 +279,11 @@ if not isWindows:
     from threading import Thread
 else:
     class Thread:
-        def __init__(self,target=None,args=[],kwargs={},name='Thread*'):
+        def __init__(self, target=None, args=None, kwargs=None, name='Thread*'):
+            if args is None:
+                args = []
+            if kwargs is None:
+                kwargs = {}
             self.__target = target
             self.__args = args
             self.__kwargs = kwargs
@@ -328,7 +332,7 @@ class SecretKey(object):
         return "%s" % self.key
 
 
-def proxyload(_thread,_useproxy,doExtra):
+def proxyload(_thread,_useproxy,do_extra):
     socket.socket = REALSOCKET
     if xchat.get_prefs('net_proxy_type') > 0 and _useproxy:
         try:
@@ -357,9 +361,9 @@ def proxyload(_thread,_useproxy,doExtra):
 
     import urllib
     import urllib.request, urllib.error, urllib.parse
-    _thread(urllib,doExtra)
+    _thread(urllib,do_extra)
 
-def destroyObject(_):
+def destroy_object(_):
     global loadObj
     del loadObj
     return False
@@ -391,7 +395,7 @@ class XChatCrypt:
             'LOADED' : True
         }
         self.__update_thread = None
-        self._updatedSource = None
+        self._updated_source = None
         self.__hooks = []
         self.__hooks.append(xchat.hook_command('SETKEY', self.set_key, help='set a new key for a nick or channel /SETKEY <nick>/#chan [new_key]'))
         self.__hooks.append(xchat.hook_command('KEYX', self.key_exchange, help='exchange a new pub key, /KEYX <nick>'))
@@ -414,33 +418,33 @@ class XChatCrypt:
 
         self.__hooks.append(xchat.hook_command('HELP',self.get_help))
 
-        self.__hooks.append(xchat.hook_command('', self.outMessage))
-        self.__hooks.append(xchat.hook_command('ME+', self.outMessageCmd))
-        self.__hooks.append(xchat.hook_command('MSG', self.outMessageCmd))
-        self.__hooks.append(xchat.hook_command('MSG+', self.outMessageForce))
-        self.__hooks.append(xchat.hook_command('NOTICE', self.outMessageCmd))
-        self.__hooks.append(xchat.hook_command('NOTICE+', self.outMessageForce))
+        self.__hooks.append(xchat.hook_command('', self.out_message))
+        self.__hooks.append(xchat.hook_command('ME+', self.out_message_cmd))
+        self.__hooks.append(xchat.hook_command('MSG', self.out_message_cmd))
+        self.__hooks.append(xchat.hook_command('MSG+', self.out_message_force))
+        self.__hooks.append(xchat.hook_command('NOTICE', self.out_message_cmd))
+        self.__hooks.append(xchat.hook_command('NOTICE+', self.out_message_force))
 
         self.__hooks.append(xchat.hook_server('notice', self.on_notice,priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_server('332', self.server_332_topic,priority=xchat.PRI_HIGHEST))
 
-        self.__hooks.append(xchat.hook_print('Key Press',self.tabComplete))
+        self.__hooks.append(xchat.hook_print('Key Press',self.tab_complete))
 
         self.__hooks.append(xchat.hook_print('Notice Send',self.on_notice_send, 'Notice',priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_print('Change Nick', self.nick_trace))
-        self.__hooks.append(xchat.hook_print('Channel Action', self.inMessage, 'Channel Action',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Action to Dialog', self.inMessage, 'Private Action to Dialog',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Action ', self.inMessage, 'Private Action',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Channel Message', self.inMessage, 'Channel Message',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Message to Dialog', self.inMessage, 'Private Message to Dialog',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Message', self.inMessage, 'Private Message',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Channel Action', self.in_message, 'Channel Action',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Action to Dialog', self.in_message, 'Private Action to Dialog',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Action ', self.in_message, 'Private Action',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Channel Message', self.in_message, 'Channel Message',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Message to Dialog', self.in_message, 'Private Message to Dialog',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Message', self.in_message, 'Private Message',priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_unload(self.__destroy))
-        self.loadDB()
+        self.load_db()
 
     def __destroy(self, userdata):
         for hook in self.__hooks:
             xchat.unhook(hook)
-        destroyObject(None)
+        destroy_object(None)
 
     def __del__(self):
         print("\00311fishcrypt.py successful unloaded")
@@ -477,7 +481,7 @@ class XChatCrypt:
             print("/SET [fishcrypt] \00314show/set fishcrypt settings")
             return xchat.EAT_ALL
 
-    def tabComplete(self, word, word_eol, userdata):
+    def tab_complete(self, word, word_eol, userdata):
         if word[0] not in ["65289","65056"]:
             return xchat.EAT_NONE
         input_ = xchat.get_info('inputbox')
@@ -520,56 +524,56 @@ class XChatCrypt:
             return xchat.EAT_ALL
         _doExtra = None
         if word[2].lower() == "diff":
-            if self._updatedSource:
-                self._updateDiff(xchat.get_context())
+            if self._updated_source:
+                self._update_diff(xchat.get_context())
             else:
-                _doExtra = self._updateDiff
+                _doExtra = self._update_diff
         if word[2].lower() == "changes":
-            if self._updatedSource:
-                self._updateChanges(xchat.get_context())
+            if self._updated_source:
+                self._update_changes(xchat.get_context())
             else:
-                _doExtra = self._updateChanges
+                _doExtra = self._update_changes
         if word[2].lower() == "install":
-            if self._updatedSource:
-                self._updateInstall(xchat.get_context())
+            if self._updated_source:
+                self._update_install(xchat.get_context())
             else:
-                _doExtra = self._updateInstall
+                _doExtra = self._update_install
         if word[2].lower() == "load" or _doExtra:
             proxyload(self._update,useproxy,_doExtra)
 
         return xchat.EAT_ALL
 
-    def _update(self,urllib,doExtra):
-        self.__update_thread = Thread(target=self.__update,kwargs={'urllib':urllib,'context':xchat.get_context(),'doExtra':doExtra},name='fishcrypt_update')
+    def _update(self, urllib, do_extra):
+        self.__update_thread = Thread(target=self.__update,kwargs={'urllib':urllib,'context':xchat.get_context(),'do_extra':do_extra},name='fishcrypt_update')
         self.__update_thread.start()
 
-    def _updateInstall(self,context):
+    def _update_install(self,context):
         try:
             with open(scriptname, "wb") as fd:
-                fd.write(self._updatedSource)
+                fd.write(self._updated_source)
             context.prnt( "\00310UPDATE Complete \r\nplease reload the script (/py reload %s)" % (script,) )
         except:
             context.prnt( "\002\0034UPDATE FAILED" )
             raise
 
-    def _updateDiff(self,context):
+    def _update_diff(self, context):
         currentscript = open(scriptname,"rb").read()
         import difflib
-        for line in difflib.unified_diff(currentscript.splitlines(True), self._updatedSource.splitlines(True)):
+        for line in difflib.unified_diff(currentscript.splitlines(True), self._updated_source.splitlines(True)):
             context.prnt(line)
 
-    def _updateChanges(self,context):
+    def _update_changes(self,context):
         currentscript = open(scriptname,"rb").read().decode()
         import difflib
         for line in difflib.ndiff(
                 currentscript[currentscript.find("# Changelog:"):currentscript.find("__module_name__")].splitlines(True),
-                self._updatedSource[self._updatedSource.find("# Changelog:"):self._updatedSource.find("__module_name__")].splitlines(1)
+                self._updated_source[self._updated_source.find("# Changelog:"):self._updated_source.find("__module_name__")].splitlines(1)
             ):
             if len(line) > 2:
                 if line[0] in ["+","-"]:
                     context.prnt( line[2:])
 
-    def __update(self,urllib,context,doExtra):
+    def __update(self,urllib,context,do_extra):
         url = UPDATEURL
         if self.config['FISHBETAVERSION']:
             url = BETAUPDATEURL
@@ -582,7 +586,7 @@ class XChatCrypt:
                     if float(__module_version__) < float(__updateversion.group(1)) or ISBETA != "":
                         updatechksum = hashlib.sha1(__updatescript).hexdigest()
                         if SCRIPTCHKSUM != updatechksum:
-                            self._updatedSource = __updatescript
+                            self._updated_source = __updatescript
                             context.prnt( "\00310Download Version %s with checksum %r complete" % (__updateversion.group(1),updatechksum))
                         else:
                             context.prnt( "\00310No new version available - checksums match")
@@ -600,12 +604,12 @@ class XChatCrypt:
         finally:
             self.__update_thread = None
             context.prnt( "\00310Update Thread finished" )
-        if doExtra and self._updatedSource:
-            doExtra(context)
+        if do_extra and self._updated_source:
+            do_extra(context)
 
 
     ## Load key storage
-    def loadDB(self):
+    def load_db(self):
         db = None
         with open(os.path.join(path,'fish3.pickle'),'rb') as hnd:
             data = hnd.read()
@@ -636,18 +640,18 @@ class XChatCrypt:
         if type(db) == dict:
             self.status['LOADED'] = True
             ## save temp keymap
-            oldKeyMap = self.__KeyMap
-            oldTargetMap = self.__TargetMap
+            old_key_map = self.__KeyMap
+            old_target_map = self.__TargetMap
             ## fill dict with the loaded Keymap
             self.__KeyMap = db.get("KeyMap",{})
             self.__TargetMap = db.get("TargetMap",{})
-            self.__KeyMap.update(oldKeyMap)
-            self.__TargetMap.update(oldTargetMap)
+            self.__KeyMap.update(old_key_map)
+            self.__TargetMap.update(old_target_map)
             for key in self.__KeyMap.keys():
                 self.__KeyMap[key].keyname = key
                 if not hasattr(self.__KeyMap[key],'protect_mode'):
                     self.__KeyMap[key].protect_mode = False
-            self.cleanUpTargetMap()
+            self.clean_up_target_map()
 
             ## only import valid config values
             for key in self.config.keys():
@@ -658,7 +662,7 @@ class XChatCrypt:
             if self.config['FISHDEVELOPDEBUG']:
                 self.__hooks.append(xchat.hook_command('FISHEVAL',self.__evaldebug))
 
-    def cleanUpTargetMap(self):
+    def clean_up_target_map(self):
         ## DB Cleanup
         for network in self.__TargetMap.values():
             for target,value in list(network.items()):
@@ -668,8 +672,8 @@ class XChatCrypt:
 
 
     ## save keys to storage
-    def saveDB(self):
-        self.cleanUpTargetMap()
+    def save_db(self):
+        self.clean_up_target_map()
         if not self.status['LOADED']:
             print("Key Storage not loaded, no save. use /DBLOAD to load it")
             return
@@ -694,7 +698,7 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     def set_dbload(self, word, word_eol, userdata):
-        self.loadDB()
+        self.load_db()
         return xchat.EAT_ALL
 
     def set_dbpass(self, word, word_eol, userdata):
@@ -751,7 +755,7 @@ class XChatCrypt:
                 else:
                     print("%sKey Storage encrypted" % (COLOR['dred']))
             self.status['CHKPW'] = None
-            self.saveDB()
+            self.save_db()
             return xchat.EAT_ALL
 
         if word[1] == "fishcrypt_passload":
@@ -760,7 +764,7 @@ class XChatCrypt:
                     print("Password not between 8 and 56 chars")
                 else:
                     self.status['DBPASSWD'] = word_eol[2]
-                    self.loadDB()
+                    self.load_db()
             else:
                 print("Key Storage Not loaded")
                 self.status['DBPASSWD'] = None
@@ -778,7 +782,7 @@ class XChatCrypt:
                     else:
                         self.config[key] = type(self.config[key])(word_eol[2])
                     print("\0035Set %r to %r" % (key,word_eol[2]))
-                    self.saveDB()
+                    self.save_db()
                 except ValueError:
                     print("\0034Invalid Config Value %r for %s" % (word_eol[2],key))
             return xchat.EAT_ALL
@@ -823,9 +827,9 @@ class XChatCrypt:
                 sndmessage = self.decrypt(key,message)
             except:
                 sndmessage = None
-            isCBC=0
+            is_cbc=0
             if message.startswith("+OK *"):
-                isCBC=1
+                is_cbc=1
             failcol = ""
 
             ## if decryption was possible check for invalid chars
@@ -833,12 +837,12 @@ class XChatCrypt:
                 try:
                     message = sndmessage
                     ## mark nick for encrypted msgg
-                    speaker = "%s %s" % ("°"*(1+isCBC),speaker)
+                    speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
                 except UnicodeError:
                     try:
                         message = str(sndmessage,encoding='iso8859-1',errors='ignore').encode('UTF8')
                         ## mark nick for encrypted msgg
-                        speaker = "%s %s" % ("°"*(1+isCBC),speaker)
+                        speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
                     except:
                         raise
                     ## send the message to local xchat
@@ -846,7 +850,7 @@ class XChatCrypt:
                     #return xchat.EAT_XCHAT
                 except:
                     ## mark nick with a question mark
-                    speaker = "?%s" % (speaker)
+                    speaker = "?%s" % speaker
                     failcol = "\003"
             else:
                 failcol = "\003"
@@ -877,8 +881,8 @@ class XChatCrypt:
         message = word_eol[1][1:]
         if message.startswith('+OK ') or message.startswith('mcps '):
             ## get the key id from the speaker
-            id = self.get_id(nick=speaker)
-            key = self.find_key(id)
+            id_ = self.get_id(nick=speaker)
+            key = self.find_key(id_)
 
             ## if no key available for the speaker exit
             if not key:
@@ -886,9 +890,9 @@ class XChatCrypt:
 
             ## decrypt the message
             sndmessage = self.decrypt(key,message)
-            isCBC = 0
+            is_cbc = 0
             if message.startswith("+OK *"):
-                isCBC = 1
+                is_cbc = 1
                 if not target.startswith("#"):
                     ## if we receive a messge with CBC enabled we asume the partner can also except it so activate it
                     key.cbc_mode = True
@@ -899,10 +903,10 @@ class XChatCrypt:
                 try:
                     message = sndmessage
                     ## mark nick for encrypted msgg
-                    speaker = "%s %s" % ("°"*(1+isCBC),speaker)
+                    speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
                 except:
                     ## mark nick with a question mark
-                    speaker = "?%s" % (speaker)
+                    speaker = "?%s" % speaker
                     ## send original message because invalid chars
                     message = message
 
@@ -912,7 +916,7 @@ class XChatCrypt:
         return xchat.EAT_NONE
 
     ## incoming messages
-    def inMessage(self, word, word_eol, userdata):
+    def in_message(self, word, word_eol, userdata):
         ## if message is allready processed ignore
         if self.__chk_proc() or len(word_eol) < 2:
             return xchat.EAT_PLUGIN
@@ -930,9 +934,9 @@ class XChatCrypt:
             target = None
             if userdata == "Private Message":
                 target = speaker
-            id = self.get_id(nick=target)
-            target,network = id
-            key = self.find_key(id)
+            id_ = self.get_id(nick=target)
+            target,network = id_
+            key = self.find_key(id_)
 
             ## if no key found exit
             if not key:
@@ -943,9 +947,9 @@ class XChatCrypt:
                 sndmessage = self.decrypt(key,message)
             except:
                 sndmessage = None
-            isCBC=0
+            is_cbc=0
             if message.startswith("+OK *"):
-                isCBC=1
+                is_cbc=1
                 if not target.startswith("#"):
                     ## if we receive a messge with CBC enabled we asume the partner can also except it so activate it
                     key.cbc_mode = True
@@ -957,12 +961,12 @@ class XChatCrypt:
                 try:
                     message = sndmessage
                     ## mark nick for encrypted msgg
-                    speaker = "%s %s" % ("°"*(1+isCBC),speaker)
+                    speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
                 except UnicodeError:
                     try:
                         message = str(sndmessage,encoding='iso8859-1',errors='ignore').encode('UTF8')
                         ## mark nick for encrypted msgg
-                        speaker = "%s %s" % ("°"*(1+isCBC),speaker)
+                        speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
                     except:
                         raise
                     ## send the message to local xchat
@@ -1013,15 +1017,15 @@ class XChatCrypt:
 
 
     ## mark outgoing message being  prefixed with a command like /notice /msg ...
-    def outMessageCmd(self, word, word_eol, userdata):
-        return self.outMessage(word, word_eol, userdata,command=True)
+    def out_message_cmd(self, word, word_eol, userdata):
+        return self.out_message(word, word_eol, userdata,command=True)
 
     ## mark outgoing message being prefixed with a command that enforces encryption like /notice+ /msg+
-    def outMessageForce(self, word, word_eol, userdata):
-        return self.outMessage(word, word_eol, userdata, force=True,command=True)
+    def out_message_force(self, word, word_eol, userdata):
+        return self.out_message(word, word_eol, userdata, force=True,command=True)
 
     ## the outgoing messages will be proccesed herre
-    def outMessage(self, word, word_eol, userdata,force=False,command=False):
+    def out_message(self, word, word_eol, userdata,force=False,command=False):
 
         ## check if allready processed
         if self.__chk_proc():
@@ -1070,7 +1074,7 @@ class XChatCrypt:
             return xchat.EAT_NONE
 
         ## if the key object is there but the key deleted or marked not active...and force is not set by command like /msg+ or /notice+
-        if key.key == None or (key.active == False and not force):
+        if key.key is None or (key.active == False and not force):
             return xchat.EAT_NONE
 
         ## if the message is marked with the plaintextmarker (default +p) don't encrypt
@@ -1109,11 +1113,11 @@ class XChatCrypt:
                 if action:
                     self.emit_print('Channel Action',  nick, message)
                 else:
-                    targetTab= xchat.find_context(channel=target)
-                    if not targetTab and targetTab != xchat.get_context():
+                    target_tab= xchat.find_context(channel=target)
+                    if not target_tab and target_tab != xchat.get_context():
                         self.emit_print('Message Send',  "%s %s" % ("°"*(1+key.cbc_mode),target), message)
                     else:
-                        self.emit_print('Your Message',  nick, message,toContext=targetTab)
+                        self.emit_print('Your Message',  nick, message, to_context=target_tab)
         return xchat.EAT_ALL
 
     def encrypt(self,key, msg):
@@ -1127,9 +1131,9 @@ class XChatCrypt:
         return encrypt_func(msg, b)
 
     ## send message to local xchat and lock it
-    def emit_print(self,userdata,speaker,message,target=None,toContext=None):
-        if not toContext:
-            toContext = xchat.get_context()
+    def emit_print(self,userdata,speaker,message,target=None,to_context=None):
+        if not to_context:
+            to_context = xchat.get_context()
         if userdata is None:
             ## if userdata is none its possible Notice
             userdata = "Notice"
@@ -1145,7 +1149,7 @@ class XChatCrypt:
                     userdata = "Channel Msg Hilight"
                 xchat.command("GUI COLOR 3")
         ## send the message
-        toContext.emit_print(userdata,speaker, message.replace('\0',''))
+        to_context.emit_print(userdata,speaker, message.replace('\0',''))
         ## release the lock
         self.__lock_proc(False,target=target)
 
@@ -1209,9 +1213,9 @@ class XChatCrypt:
 
     ## print encrypted localy
     def prn_crypt(self, word, word_eol, userdata):
-        id = self.get_id()
-        target, network = id
-        key = self.find_key(id)
+        id_ = self.get_id()
+        target, network = id_
+        key = self.find_key(id_)
         if len(word_eol) < 2:
             print("usage: /PRNCRYPT <msg to encrypt>")
         else:
@@ -1223,9 +1227,9 @@ class XChatCrypt:
 
     ## print decrypted localy
     def prn_decrypt(self, word, word_eol, userdata):
-        id = self.get_id()
-        target, network = id
-        key = self.find_key(id)
+        id_ = self.get_id()
+        target, network = id_
+        key = self.find_key(id_)
         if len(word_eol) < 2:
             print("usage: /PRNDECRYPT <msg to decrypt>")
         else:
@@ -1264,7 +1268,7 @@ class XChatCrypt:
 
         print("Key for %s on Network %s set to %r" % ( target,network,newkey))
         ## save the key storage
-        self.saveDB()
+        self.save_db()
         return xchat.EAT_ALL
 
     ## delete a key or all
@@ -1291,7 +1295,7 @@ class XChatCrypt:
             except KeyError:
                 print("Key %r not found" % (id_,))
         ## save the keystorage
-        self.saveDB()
+        self.save_db()
         return xchat.EAT_ALL
 
     ## show either key for current chan/nick or all
@@ -1354,7 +1358,7 @@ class XChatCrypt:
         self.__lock_proc(False)
 
         ## save the key storage
-        self.saveDB()
+        self.save_db()
         return xchat.EAT_ALL
 
 
@@ -1404,7 +1408,7 @@ class XChatCrypt:
         print("DH1080 Init: %s on %s" % (target,network))
         print("Key set to %r" % (key.key,))
         ## save key storage
-        self.saveDB()
+        self.save_db()
         return xchat.EAT_ALL
 
     ## Answer from targets init
@@ -1423,7 +1427,7 @@ class XChatCrypt:
         print("DH1080 Finish: %s on %s" % (target,network))
         print("Key set to %r" % (key.key,))
         ## save key storage
-        self.saveDB()
+        self.save_db()
         return xchat.EAT_ALL
 
     ## set cbc mode or show the status
@@ -1456,7 +1460,7 @@ class XChatCrypt:
                 key.cbc_mode = bool(mode in ONMODES)
                 print("set CBC Mode for %s to %s" % (target,(key.cbc_mode == True and "on") or "off"))
                 ## save key storage
-                self.saveDB()
+                self.save_db()
         return xchat.EAT_ALL
 
     ## set key protection mode or show the status
@@ -1493,7 +1497,7 @@ class XChatCrypt:
                 key.protect_mode = bool(mode in ONMODES)
                 print("set KEY Protection for %s to %s" % (target,(key.protect_mode == True and "on") or "off"))
                 ## save key storage
-                self.saveDB()
+                self.save_db()
         return xchat.EAT_ALL
 
 
@@ -1526,7 +1530,7 @@ class XChatCrypt:
                 key.active = bool(mode in ONMODES)
                 print("set Encryption for %s to %s" % (target,(key.active == True and "on") or "off"))
                 ## save key storage
-                self.saveDB()
+                self.save_db()
         return xchat.EAT_ALL
 
     ## handle topic server message
@@ -1538,9 +1542,9 @@ class XChatCrypt:
         ## check if topic is crypted
         if not topic.startswith(':+OK ') and not topic.startswith(':mcps '):
             return xchat.EAT_NONE
-        id = self.get_id(nick=channel)
+        id_ = self.get_id(nick=channel)
         ## look for a key
-        key = self.find_key(id,create=SecretKey(None))
+        key = self.find_key(id_,create=SecretKey(None))
         ## if no key exit
         if not key.key:
             return xchat.EAT_NONE
@@ -1578,7 +1582,7 @@ class XChatCrypt:
             except KeyError:
                 pass
             ## save key storage
-            self.saveDB()
+            self.save_db()
         return xchat.EAT_NONE
 
 ## Preliminaries.
@@ -1614,9 +1618,9 @@ def bytes2int(b):
 def padto(msg, length):
     """Pads 'msg' with zeroes until it's length is divisible by 'length'.
     If the length of msg is already a multiple of 'length', does nothing."""
-    L = len(msg)
-    if L % length:
-        msg += bytes(length - L % length)
+    l = len(msg)
+    if l % length:
+        msg += bytes(length - l % length)
     assert len(msg) % length == 0
     return msg
 
@@ -1626,16 +1630,16 @@ def cbc_encrypt(func, data, blocksize):
     plaintext. 'blocksize' is the block size of the cipher."""
     assert len(data) % blocksize == 0
 
-    IV = os.urandom(blocksize)
-    assert len(IV) == blocksize
+    iv = os.urandom(blocksize)
+    assert len(iv) == blocksize
 
-    ciphertext = IV
+    ciphertext = iv
     for block_index in range(len(data) // blocksize):
-        xored = xorstring(data[:blocksize], IV)
+        xored = xorstring(data[:blocksize], iv)
         enc = func(xored)
 
         ciphertext += enc
-        IV = enc
+        iv = enc
         data = data[blocksize:]
 
     assert len(ciphertext) % blocksize == 0
@@ -1646,15 +1650,15 @@ def cbc_decrypt(func, data, blocksize):
     """See cbc_encrypt."""
     assert len(data) % blocksize == 0
 
-    IV = data[0:blocksize]
+    iv = data[0:blocksize]
     data = data[blocksize:]
 
     plaintext = b''
     for block_index in range(len(data) // blocksize):
         temp = func(data[0:blocksize])
-        temp2 = xorstring(temp, IV)
+        temp2 = xorstring(temp, iv)
         plaintext += temp2
-        IV = data[0:blocksize]
+        iv = data[0:blocksize]
         data = data[blocksize:]
 
     assert len(plaintext) % blocksize == 0
@@ -1704,14 +1708,14 @@ def blowcrypt_b64encode(s):
 
 def blowcrypt_b64decode(s):
     """A non-standard base64-decode."""
-    B64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    b64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     res = bytearray()
     while s:
         left, right = 0, 0
         for i, p in enumerate(s[0:6]):
-            right |= B64.index(p) << (i * 6)
+            right |= b64.index(p) << (i * 6)
         for i, p in enumerate(s[6:12]):
-            left |= B64.index(p) << (i * 6)
+            left |= b64.index(p) << (i * 6)
         res.extend( struct.pack('>LL', left, right) )
         s = s[12:]
     return bytes(res)
@@ -1797,10 +1801,10 @@ def dh1080_b64encode(s):
     b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     d = [0]*len(s)*2
 
-    L = len(s) * 8
+    l = len(s) * 8
     m = 0x80
     i, j, k, t = 0, 0, 0, 0
-    while i < L:
+    while i < l:
         if s[i >> 3] & m:
             t |= 1
         j += 1
@@ -1834,52 +1838,52 @@ def dh1080_b64decode(s):
     b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
     buf = [0]*256
     for i in range(64):
-        buf[ord(b64[i])] = i
+        buf[b64[i]] = i
 
-    L = len(s)
-    if L < 2:
+    l = len(s)
+    if l < 2:
         raise ValueError
-    for i in reversed(list(range(L-1))):
+    for i in reversed(list(range(l-1))):
         if buf[ord(s[i])] == 0:
-            L -= 1
+            l -= 1
         else:
             break
-    if L < 2:
+    if l < 2:
         raise ValueError
 
-    d = [0]*L
+    d = [0]*l
     i, k = 0, 0
     while True:
         i += 1
-        if k + 1 < L:
+        if k + 1 < l:
             d[i-1] = buf[ord(s[k])] << 2
             d[i-1] %= 0x100
         else:
             break
         k += 1
-        if k < L:
+        if k < l:
             d[i-1] |= buf[ord(s[k])] >> 4
         else:
             break
         i += 1
-        if k + 1 < L:
+        if k + 1 < l:
             d[i-1] = buf[ord(s[k])] << 4
             d[i-1] %= 0x100
         else:
             break
         k += 1
-        if k < L:
+        if k < l:
             d[i-1] |= buf[ord(s[k])] >> 2
         else:
             break
         i += 1
-        if k + 1 < L:
+        if k + 1 < l:
             d[i-1] = buf[ord(s[k])] << 6
             d[i-1] %= 0x100
         else:
             break
         k += 1
-        if k < L:
+        if k < l:
             d[i-1] |= buf[ord(s[k])] % 0x100
         else:
             break
@@ -1974,15 +1978,15 @@ def dh1080_secret(ctx):
 if REQUIRESETUP:
     __install_thread = None
 
-    def _install_pyBlowfish(urllib, doExtra):
+    def _install_pyblowfish(urllib, do_extra):
         global __install_thread
         if __install_thread:
             print("Install is allready running")
             return
-        __install_thread = Thread(target=__install_pyBlowfish,kwargs={'urllib':urllib,'context':xchat.get_context()})
+        __install_thread = Thread(target=__install_pyblowfish,kwargs={'urllib':urllib,'context':xchat.get_context()})
         __install_thread.start()
 
-    def __install_pyBlowfish(urllib,context):
+    def __install_pyblowfish(urllib,context):
         global __install_thread
         context.prnt("\0038.....checking for pyBlowfish.py at %r... please wait ...." % PYBLOWFISHURL)
         try:
@@ -2003,7 +2007,7 @@ if REQUIRESETUP:
         if len(word) >1:
             if word[1].lower() == "noproxy":
                 useproxy = False
-        proxyload(_install_pyBlowfish,useproxy,None)
+        proxyload(_install_pyblowfish,useproxy,None)
         return xchat.EAT_ALL
 
     xchat.hook_command('FISHSETUP', fishsetup)
