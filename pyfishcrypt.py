@@ -838,7 +838,7 @@ class XChatCrypt:
             ## if decryption was possible check for invalid chars
             if sndmessage:
                 try:
-                    message = sndmessage.decode("UTF8").encode("UTF8")
+                    message = sndmessage
                     ## mark nick for encrypted msgg
                     speaker = "%s %s" % ("°"*(1+isCBC),speaker)
                 except UnicodeError:
@@ -904,7 +904,7 @@ class XChatCrypt:
 
             if sndmessage:
                 try:
-                    message = sndmessage.decode("UTF8").encode("UTF8")
+                    message = sndmessage
                     ## mark nick for encrypted msgg
                     speaker = "%s %s" % ("°"*(1+isCBC),speaker)
                 except:
@@ -962,7 +962,7 @@ class XChatCrypt:
             ## if decryption was possible check for invalid chars
             if sndmessage:
                 try:
-                    message = sndmessage.decode("UTF8").encode("UTF8")
+                    message = sndmessage
                     ## mark nick for encrypted msgg
                     speaker = "%s %s" % ("°"*(1+isCBC),speaker)
                 except UnicodeError:
@@ -995,6 +995,7 @@ class XChatCrypt:
         else:
             decrypt_clz = Blowfish
             decrypt_func = blowcrypt_unpack
+
         try:
             b = decrypt_clz(key.key)
             #if msg[-2:-1] == " ":
@@ -1655,7 +1656,7 @@ def cbc_decrypt(func, data, blocksize):
     plaintext = ''
     for block_index in range(len(data) // blocksize):
         temp = func(data[0:blocksize])
-        temp2 = xorstring(temp, IV).decode()
+        temp2 = xorstring(temp, IV).decode('utf-8', 'ignore')
         plaintext += temp2
         IV = data[0:blocksize]
         data = data[blocksize:]
@@ -1749,7 +1750,7 @@ def blowcrypt_unpack(msg, cipher):
 def mircryption_cbc_pack(msg, cipher):
     """."""
     padded = padto(msg, 8)
-    return '+OK *%s' % (base64.b64encode(cipher.encrypt(padded)))
+    return '+OK *%s' % (base64.b64encode(cipher.encrypt(padded)).decode())
 
 
 def mircryption_cbc_unpack(msg, cipher):
@@ -1759,7 +1760,7 @@ def mircryption_cbc_unpack(msg, cipher):
 
     try:
         _, coded = msg.split('*', 1)
-        raw = base64.b64decode(coded)
+        raw = base64.b64decode(coded.encode())
     except TypeError:
         raise MalformedError
     if not raw:
