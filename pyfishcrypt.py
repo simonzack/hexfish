@@ -206,11 +206,10 @@ import hashlib
 import struct
 import time
 
-from math import log
-
 try:
     import xchat
 except ImportError:
+    xchat = None
     sys.exit("should be run from xchat plugin with python enabled")
 
 import pickle
@@ -245,7 +244,7 @@ except ImportError:
         chksum = hashlib.sha1(open(pyBlowfishlocation,'rb').read()).hexdigest()
         validVersion = {'35c1b6cd5af14add86dc0cf3f0309a185c308dcd':0.4,'877ae9de309685c975a6d120760c1ff9b4c55719':0.5, '57117e7c9c7649bf490589b7ae06a140e82664c6':0.5}.get(chksum,-1)
         if validVersion == -1:
-            print("\0034** Loaded pyBlowfish.py with checksum: %s is untrusted" % (chksum))
+            print("\0034** Loaded pyBlowfish.py with checksum: %s is untrusted" % chksum)
         else:
             if validVersion < 0.5:
                 print("\0034** Loaded pyBlowfish.py (%.1f) with checksum: %s is too old" % (validVersion,chksum))
@@ -254,6 +253,8 @@ except ImportError:
                 print("\0033** Loaded pyBlowfish.py Version %.1f with checksum: %s" % (validVersion,chksum))
 
     except ImportError:
+        cBlowfish = None
+
         import platform
         print("\002\0034No Blowfish implementation")
         print("This module requires PyCrypto / The Python Cryptographic Toolkit.")
@@ -284,9 +285,11 @@ else:
             self.__kwargs = kwargs
             self.__name = name
             self.__hook = None
+
         def start(self):
             print("-Starting Pseudo Thread")
             self.__hook = xchat.hook_timer(1,self.__thread,(self.__target,self.__args,self.__kwargs))
+
         def __thread(self,userdata):
             try:
                 _thread,args,kwargs = userdata
@@ -317,10 +320,12 @@ class SecretKey(object):
         self.active = True
         self.cipher = 0
         self.keyname = (None,None)
+
     def __str__(self):
         return "%s@%s" % self.keyname
+
     def __repr__(self):
-        return "%s" % (self.key)
+        return "%s" % self.key
 
 
 def proxyload(_thread,_useproxy,doExtra):
@@ -343,7 +348,7 @@ def proxyload(_thread,_useproxy,doExtra):
         proxyuser = xchat.get_prefs('net_proxy_user')
         proxypass = xchat.get_prefs('net_proxy_pass')
         if len(proxyuser) < 1 or len(proxypass) < 1:
-            proyxuser = proxypass = None
+            proxyuser = proxypass = None
         socks.setdefaultproxy(proxytype,xchat.get_prefs('net_proxy_host'),xchat.get_prefs('net_proxy_port'),rdns=True,username=proxyuser,password=proxypass)
         print("\00310using xchat proxy settings \0037Type: %s Host: %s Port: %s" % (nameproxytype[proxytype],xchat.get_prefs('net_proxy_host'),xchat.get_prefs('net_proxy_port')))
 
@@ -354,7 +359,7 @@ def proxyload(_thread,_useproxy,doExtra):
     import urllib.request, urllib.error, urllib.parse
     _thread(urllib,doExtra)
 
-def destroyObject(userdata):
+def destroyObject(_):
     global loadObj
     del loadObj
     return False
@@ -432,7 +437,7 @@ class XChatCrypt:
         self.__hooks.append(xchat.hook_unload(self.__destroy))
         self.loadDB()
 
-    def __destroy(self,userdata):
+    def __destroy(self, userdata):
         for hook in self.__hooks:
             xchat.unhook(hook)
         destroyObject(None)
@@ -440,15 +445,15 @@ class XChatCrypt:
     def __del__(self):
         print("\00311fishcrypt.py successful unloaded")
 
-    def get_help(self,word, word_eol, userdata):
+    def get_help(self, word, word_eol, userdata):
         if len(word) < 2:
             print("\n\0033 For fishcrypt.py help type /HELP FISHCRYPT")
             return xchat.EAT_NONE
         if word[1].upper() == "FISHCRYPT":
             print("")
-            print("\002\0032 ****  fishcrypt.py Version: %s %s ****" % (__module_version__,ISBETA))
+            print("\002\0032 ****  fishcrypt.py Version: %s %s ****" % (__module_version__, ISBETA))
             if self.config['FISHBETAVERSION']:
-                print("\0036Beta download %s" % (BETAUPDATEURL))
+                print("\0036Beta download %s" % BETAUPDATEURL)
 
             print("\0036 %s" % UPDATEURL)
             print("\n")
@@ -472,26 +477,26 @@ class XChatCrypt:
             print("/SET [fishcrypt] \00314show/set fishcrypt settings")
             return xchat.EAT_ALL
 
-    def tabComplete(self,word, word_eol, userdata):
+    def tabComplete(self, word, word_eol, userdata):
         if word[0] not in ["65289","65056"]:
             return xchat.EAT_NONE
-        input = xchat.get_info('inputbox')
-        if input.upper().startswith("/UPDATE FISHCRYPT I"):
+        input_ = xchat.get_info('inputbox')
+        if input_.upper().startswith("/UPDATE FISHCRYPT I"):
             newinput = "/UPDATE FISHCRYPT INSTALL"
-        elif input.upper().startswith("/UPDATE FISHCRYPT D"):
+        elif input_.upper().startswith("/UPDATE FISHCRYPT D"):
             newinput = "/UPDATE FISHCRYPT DIFF"
-        elif input.upper().startswith("/UPDATE FISHCRYPT C"):
+        elif input_.upper().startswith("/UPDATE FISHCRYPT C"):
             newinput = "/UPDATE FISHCRYPT CHANGES"
-        elif input.upper().startswith("/UPDATE FISHCRYPT L"):
+        elif input_.upper().startswith("/UPDATE FISHCRYPT L"):
             newinput = "/UPDATE FISHCRYPT LOAD"
-        elif input.upper() == "/UPDATE FISHCRYPT ":
+        elif input_.upper() == "/UPDATE FISHCRYPT ":
             print("LOAD INSTALL DIFF CHANGES")
             return xchat.EAT_NONE
-        elif input.upper().startswith("/UPDATE F"):
+        elif input_.upper().startswith("/UPDATE F"):
             newinput = "/UPDATE FISHCRYPT "
-        elif input.upper().startswith("/HELP F"):
+        elif input_.upper().startswith("/HELP F"):
             newinput = "/HELP FISHCRYPT "
-        elif input.upper().startswith("/SET F"):
+        elif input_.upper().startswith("/SET F"):
             newinput = "/SET FISHCRYPT "
         else:
             return xchat.EAT_NONE
@@ -499,11 +504,10 @@ class XChatCrypt:
         xchat.command("SETCURSOR %d" % len(newinput))
         return xchat.EAT_PLUGIN
 
-
-    def fishupdate(self,word, word_eol, userdata):
+    def fishupdate(self, word, word_eol, userdata):
         return self.update(["UPDATE","FISHCRYPT","INSTALL"],None,None)
 
-    def update(self,word, word_eol, userdata):
+    def update(self, word, word_eol, userdata):
         useproxy = self.config['USEPROXYUPDATE']
         if len(word) <3:
             print("\00313Fishcrypt.py Updater")
@@ -541,11 +545,8 @@ class XChatCrypt:
 
     def _updateInstall(self,context):
         try:
-            try:
-                __fd = open(scriptname,"wb")
-                __fd.write(self._updatedSource)
-            finally:
-                __fd.close()
+            with open(scriptname, "wb") as fd:
+                fd.write(self._updatedSource)
             context.prnt( "\00310UPDATE Complete \r\nplease reload the script (/py reload %s)" % (script,) )
         except:
             context.prnt( "\002\0034UPDATE FAILED" )
@@ -554,13 +555,16 @@ class XChatCrypt:
     def _updateDiff(self,context):
         currentscript = open(scriptname,"rb").read()
         import difflib
-        for line in difflib.unified_diff(currentscript.splitlines(1),self._updatedSource.splitlines(1)):
-            context.prnt( line)
+        for line in difflib.unified_diff(currentscript.splitlines(True), self._updatedSource.splitlines(True)):
+            context.prnt(line)
 
     def _updateChanges(self,context):
-        currentscript = open(scriptname,"rb").read()
+        currentscript = open(scriptname,"rb").read().decode()
         import difflib
-        for line in difflib.ndiff(currentscript[currentscript.find("# Changelog:"):currentscript.find("__module_name__")].splitlines(1),self._updatedSource[self._updatedSource.find("# Changelog:"):self._updatedSource.find("__module_name__")].splitlines(1)):
+        for line in difflib.ndiff(
+                currentscript[currentscript.find("# Changelog:"):currentscript.find("__module_name__")].splitlines(True),
+                self._updatedSource[self._updatedSource.find("# Changelog:"):self._updatedSource.find("__module_name__")].splitlines(1)
+            ):
             if len(line) > 2:
                 if line[0] in ["+","-"]:
                     context.prnt( line[2:])
@@ -602,20 +606,11 @@ class XChatCrypt:
 
     ## Load key storage
     def loadDB(self):
-        data = db = None
-        try:
-            try:
-                hnd = open(os.path.join(path,'fish3.pickle'),'rb')
-                data = hnd.read()
-                ## set DB loaded to False as we have a file we don't want to create a new
-                self.status['LOADED'] = False
-            except:
-                return
-        finally:
-            try:
-                hnd.close()
-            except:
-                pass
+        db = None
+        with open(os.path.join(path,'fish3.pickle'),'rb') as hnd:
+            data = hnd.read()
+            ## set DB loaded to False as we have a file we don't want to create a new
+            self.status['LOADED'] = False
         if data:
             try:
                 db = pickle.loads(data)
@@ -678,14 +673,13 @@ class XChatCrypt:
         if not self.status['LOADED']:
             print("Key Storage not loaded, no save. use /DBLOAD to load it")
             return
-        try:
+        with open(os.path.join(path,'fish3.pickle'),'wb') as hnd:
             data = pickle.dumps({
                 'KeyMap': self.__KeyMap,
                 'TargetMap': self.__TargetMap,
                 'Config': self.config,
                 'Version': __module_version__
             })
-            hnd = open(os.path.join(path,'fish3.pickle'),'wb')
             if self.status['DBPASSWD']:
                 algo = BlowfishCBC(self.status['DBPASSWD'])
                 encrypted = mircryption_cbc_pack(data.decode('utf-8', 'ignore'), algo).encode()
@@ -694,23 +688,21 @@ class XChatCrypt:
             else:
                 self.status['CRYPTDB'] = False
             hnd.write(data)
-        finally:
-            hnd.close()
 
-    def __evaldebug(self,word, word_eol, userdata):
+    def __evaldebug(self, word, word_eol, userdata):
         eval(compile(word_eol[1],'develeval','exec'))
         return xchat.EAT_ALL
 
-    def set_dbload(self,word, word_eol, userdata):
+    def set_dbload(self, word, word_eol, userdata):
         self.loadDB()
         return xchat.EAT_ALL
 
-    def set_dbpass(self,word, word_eol, userdata):
+    def set_dbpass(self, word, word_eol, userdata):
         xchat.command('GETSTR "" "SET fishcrypt_passpre" "New Password"')
         return xchat.EAT_ALL
 
     ## set keydb passwd
-    def settings(self,word, word_eol, userdata):
+    def settings(self, word, word_eol, userdata):
         fishonly = False
         if len(word) == 2:
             if word[1].upper() == "FISHCRYPT":
@@ -736,7 +728,7 @@ class XChatCrypt:
 
         if word[1] == "fishcrypt_pass":
             if len(word) == 2:
-                if self.status['CHKPW'] != "" and self.status['CHKPW'] != None:
+                if self.status['CHKPW'] != "" and self.status['CHKPW'] is not None:
                     print("Passwords don't match")
                     self.status['CHKPW'] = None
                     return xchat.EAT_ALL
@@ -744,7 +736,7 @@ class XChatCrypt:
                 print("%sPassword removed and Key Storage decrypted" % (COLOR['dred'],))
                 print("%sWarning Keys are plaintext" % (COLOR['dred'],))
             else:
-                if self.status['CHKPW'] != None and self.status['CHKPW'] != word_eol[2]:
+                if self.status['CHKPW'] is not None and self.status['CHKPW'] != word_eol[2]:
                     print("Passwords don't match")
                     self.status['CHKPW'] = None
                     return xchat.EAT_ALL
@@ -754,7 +746,7 @@ class XChatCrypt:
                     return xchat.EAT_ALL
                 self.status['DBPASSWD'] = word_eol[2]
                 ## don't show the pw on console if set per GETSTR
-                if self.status['CHKPW'] == None:
+                if self.status['CHKPW'] is None:
                     print("%sPassword for Key Storage encryption set to %r" % (COLOR['dred'],self.status['DBPASSWD']))
                 else:
                     print("%sKey Storage encrypted" % (COLOR['dred']))
@@ -794,7 +786,7 @@ class XChatCrypt:
         return xchat.EAT_NONE
 
     ## incoming notice received
-    def on_notice(self,word, word_eol, userdata):
+    def on_notice(self, word, word_eol, userdata):
         ## check if this is not allready processed
         if self.__chk_proc():
             return xchat.EAT_NONE
@@ -816,12 +808,12 @@ class XChatCrypt:
             ## strip :: from message
             message = word_eol[3][2:]
             if target.startswith("#"):
-                id = self.get_id()
+                id_ = self.get_id()
                 speaker = "## %s" % speaker
             else:
-                id = self.get_id(nick=nick)
+                id_ = self.get_id(nick=nick)
             #print "DEBUG(crypt): key: %r word: %r" % (id,word,)
-            key = self.find_key(id)
+            key = self.find_key(id_)
             ## if no key found exit
             if not key:
                 return xchat.EAT_NONE
@@ -869,7 +861,7 @@ class XChatCrypt:
             return xchat.EAT_NONE
 
     ## local notice send messages
-    def on_notice_send(self,word, word_eol, userdata):
+    def on_notice_send(self, word, word_eol, userdata):
         ## get current nick
         target = xchat.get_context().get_info('nick')
         #print "DEBUG_notice_send: %r - %r - %r %r" % (word,word_eol,userdata,nick)
@@ -920,7 +912,7 @@ class XChatCrypt:
         return xchat.EAT_NONE
 
     ## incoming messages
-    def inMessage(self,word, word_eol, userdata):
+    def inMessage(self, word, word_eol, userdata):
         ## if message is allready processed ignore
         if self.__chk_proc() or len(word_eol) < 2:
             return xchat.EAT_PLUGIN
@@ -978,7 +970,7 @@ class XChatCrypt:
                     #return xchat.EAT_XCHAT
                 except:
                     ## mark nick with a question mark
-                    speaker = "?%s" % (speaker)
+                    speaker = "?%s" % speaker
                     failcol = "\003"
             else:
                 failcol = "\003"
@@ -988,7 +980,7 @@ class XChatCrypt:
 
         return xchat.EAT_NONE
 
-    def decrypt(self,key,msg):
+    def decrypt(self, key, msg):
         ## check for CBC
         if 3 <= msg.find(' *') <= 4:
             decrypt_clz = BlowfishCBC
@@ -1021,23 +1013,23 @@ class XChatCrypt:
 
 
     ## mark outgoing message being  prefixed with a command like /notice /msg ...
-    def outMessageCmd(self,word, word_eol, userdata):
+    def outMessageCmd(self, word, word_eol, userdata):
         return self.outMessage(word, word_eol, userdata,command=True)
 
     ## mark outgoing message being prefixed with a command that enforces encryption like /notice+ /msg+
-    def outMessageForce(self,word, word_eol, userdata):
+    def outMessageForce(self, word, word_eol, userdata):
         return self.outMessage(word, word_eol, userdata, force=True,command=True)
 
     ## the outgoing messages will be proccesed herre
-    def outMessage(self,word, word_eol, userdata,force=False,command=False):
+    def outMessage(self, word, word_eol, userdata,force=False,command=False):
 
         ## check if allready processed
         if self.__chk_proc():
             return xchat.EAT_NONE
 
         ## get the id
-        id = self.get_id()
-        target,network = id
+        id_ = self.get_id()
+        target,network = id_
         ## check if message is prefixed wit a command like /msg /notice
         action = False
         if command:
@@ -1057,7 +1049,7 @@ class XChatCrypt:
                 ## the target is first parameter after the command, not the current channel
                 target = word[1]
                 ## change id
-                id = (target,network)
+                id_ = (target,network)
                 ## remove command and target from message
                 message = word_eol[2]
         else:
@@ -1066,7 +1058,7 @@ class XChatCrypt:
 
         sendmsg = ''
         ## try to get a key for the target id
-        key = self.find_key(id)
+        key = self.find_key(id_)
 
         ## my own nick
         nick = xchat.get_context().get_info('nick')
@@ -1138,7 +1130,7 @@ class XChatCrypt:
     def emit_print(self,userdata,speaker,message,target=None,toContext=None):
         if not toContext:
             toContext = xchat.get_context()
-        if userdata == None:
+        if userdata is None:
             ## if userdata is none its possible Notice
             userdata = "Notice"
         if not target:
@@ -1164,8 +1156,8 @@ class XChatCrypt:
             ## if no target set, the current channel is the target
             target = ctx.get_info('channel')
         ## the lock is NETWORK-TARGET
-        id = "%s-%s" % (ctx.get_info('network'),target)
-        self.__lockMAP[id] = state
+        id_ = "%s-%s" % (ctx.get_info('network'),target)
+        self.__lockMAP[id_] = state
 
     ## check if that message is allready processed to avoid loops
     def __chk_proc(self,target=None):
@@ -1173,8 +1165,8 @@ class XChatCrypt:
         if not target:
             ## if no target set, the current channel is the target
             target = ctx.get_info('channel')
-        id = "%s-%s" % (ctx.get_info('network'),target)
-        return self.__lockMAP.get(id,False)
+        id_ = "%s-%s" % (ctx.get_info('network'),target)
+        return self.__lockMAP.get(id_,False)
 
     # get an id from channel name and networkname
     def get_id(self,nick=None):
@@ -1184,11 +1176,11 @@ class XChatCrypt:
         else:
             target = str(ctx.get_info('channel'))
         ##return the id
-        return (target, str(ctx.get_info('network')).lower())
+        return target, str(ctx.get_info('network')).lower()
 
-    def find_key(self,id,create=None):
-        key = self.__KeyMap.get(id,None)
-        target, network = id
+    def find_key(self, id_, create=None):
+        key = self.__KeyMap.get(id_,None)
+        target, network = id_
         networkmap = self.__TargetMap.get(network,None)
         if not networkmap:
             networkmap = {}
@@ -1216,7 +1208,7 @@ class XChatCrypt:
         return ret
 
     ## print encrypted localy
-    def prn_crypt(self,word, word_eol, userdata):
+    def prn_crypt(self, word, word_eol, userdata):
         id = self.get_id()
         target, network = id
         key = self.find_key(id)
@@ -1230,7 +1222,7 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## print decrypted localy
-    def prn_decrypt(self,word, word_eol, userdata):
+    def prn_decrypt(self, word, word_eol, userdata):
         id = self.get_id()
         target, network = id
         key = self.find_key(id)
@@ -1245,9 +1237,9 @@ class XChatCrypt:
 
 
     ## manual set a key for a nick or channel
-    def set_key(self,word, word_eol, userdata):
-        id = self.get_id()
-        target, network = id
+    def set_key(self, word, word_eol, userdata):
+        id_ = self.get_id()
+        target, network = id_
 
         ## if more than 2 parameter the nick/channel target is set to para 1 and the key is para 2
         if len(word) > 2:
@@ -1255,7 +1247,7 @@ class XChatCrypt:
             if target.find("@") > 0:
                 target,network = target.split("@",1)
             newkey = word[2]
-            id = (target,network)
+            id_ = (target,network)
         ## else the current channel/nick is taken as target and the key is para 1
         else:
             newkey = word[1]
@@ -1263,12 +1255,12 @@ class XChatCrypt:
             print("Key must be between 8 and 56 chars")
             return xchat.EAT_ALL
         ## get the Keyobject if available or get a new one
-        key = self.find_key(id,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+        key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
         ## set the key
         key.key = newkey
-        key.keyname = id
+        key.keyname = id_
         ## put it in the key dict
-        self.__KeyMap[id] = key
+        self.__KeyMap[id_] = key
 
         print("Key for %s on Network %s set to %r" % ( target,network,newkey))
         ## save the key storage
@@ -1276,7 +1268,7 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## delete a key or all
-    def del_key(self,word, word_eol, userdata):
+    def del_key(self, word, word_eol, userdata):
         ## don't accept no parameter
         if len(word) <2:
             print("Error: /DELKEY nick|channel|* (* deletes all keys)")
@@ -1288,25 +1280,25 @@ class XChatCrypt:
         else:
             if target.find("@") > 0:
                 target,network = target.split("@",1)
-                id = target,network
+                id_ = target,network
             else:
-                id = self.get_id(nick=target)
-                target,network = id
+                id_ = self.get_id(nick=target)
+                target,network = id_
             ## try to delete the key
             try:
-                del self.__KeyMap[id]
+                del self.__KeyMap[id_]
                 print("Key for %s on %s deleted" % (target,network))
             except KeyError:
-                print("Key %r not found" % (id,))
+                print("Key %r not found" % (id_,))
         ## save the keystorage
         self.saveDB()
         return xchat.EAT_ALL
 
     ## show either key for current chan/nick or all
-    def show_key(self,word, word_eol, userdata):
+    def show_key(self, word, word_eol, userdata):
         ## if no parameter show key for current chan/nick
         if len(word) <2:
-            id = self.get_id()
+            id_ = self.get_id()
         else:
             target = word_eol[1]
             network = ""
@@ -1317,16 +1309,16 @@ class XChatCrypt:
             ## if para 1 is * show all keys and there states
             if target.find("*") > -1:
                 print(" -------- nick/chan ------- -------- network ------- -ON- -CBC- -PROTECT- -------------------- Key --------------------")
-                for id,keys in self.__KeyMap.items():
-                    if id[0].startswith(target[:-1]) and id[1].startswith(network):
-                        print("  %-26.26s %-22.22s  %2.2s   %3.3s   %5.5s      %s" % (id[0],id[1],YESNO(keys.active),YESNO(keys.cbc_mode),YESNO(keys.protect_mode),keys.key))
+                for id_, keys in self.__KeyMap.items():
+                    if id_[0].startswith(target[:-1]) and id_[1].startswith(network):
+                        print("  %-26.26s %-22.22s  %2.2s   %3.3s   %5.5s      %s" % (id_[0],id_[1],YESNO(keys.active),YESNO(keys.cbc_mode),YESNO(keys.protect_mode),keys.key))
 
                 return xchat.EAT_ALL
             ## else get the id for the target
-            id = self.get_id(nick=target)
+            id_ = self.get_id(nick=target)
 
         ## get the Key
-        key = self.find_key(id)
+        key = self.find_key(id_)
         if key:
             ## show Key for the specified chan/nick
             print("[ %s ] Key: %s - Active: %s - CBC: %s - PROTECT: %s" % (key,key.key,YESNO(key.active),YESNO(key.cbc_mode),YESNO(key.protect_mode)))
@@ -1335,12 +1327,12 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## start the DH1080 Key Exchange
-    def key_exchange(self,word, word_eol, userdata):
-        id = self.get_id()
-        target,network = id
+    def key_exchange(self, word, word_eol, userdata):
+        id_ = self.get_id()
+        target,network = id_
         if len(word) >1:
             target = word[1]
-            id = (target,network)
+            id_ = (target,network)
 
         ## fixme chan notice - what should happen when keyx is send to channel trillian seems to accept it and send me a key --
         if target.startswith("#"):
@@ -1350,9 +1342,9 @@ class XChatCrypt:
         ## create DH
         dh = DH1080Ctx()
 
-        self.__KeyMap[id] = self.find_key(id,create=SecretKey(dh,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
-        self.__KeyMap[id].keyname = id
-        self.__KeyMap[id].dh = dh
+        self.__KeyMap[id_] = self.find_key(id_,create=SecretKey(dh,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+        self.__KeyMap[id_].keyname = id_
+        self.__KeyMap[id_].dh = dh
 
         ## lock the target
         self.__lock_proc(True)
@@ -1367,11 +1359,11 @@ class XChatCrypt:
 
 
     ## Answer to KeyExchange
-    def dh1080_init(self,word, word_eol, userdata):
-        id = self.get_id(nick=self.get_nick(word[0]))
-        target,network = id
+    def dh1080_init(self, word, word_eol, userdata):
+        id_ = self.get_id(nick=self.get_nick(word[0]))
+        target,network = id_
         message = word_eol[3]
-        key = self.find_key(id,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+        key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
         ## Protection against a new key if "/PROTECTKEY" is on for nick
         if key.protect_mode:
             print("%sKEYPROTECTION: %s on %s" % (COLOR['red'],target,network))
@@ -1395,7 +1387,7 @@ class XChatCrypt:
         dh = DH1080Ctx()
         dh1080_unpack(message[1 : ], dh)
         key.key = dh1080_secret(dh)
-        key.keyname = id
+        key.keyname = id_
 
         ## lock the target
         self.__lock_proc(True)
@@ -1408,7 +1400,7 @@ class XChatCrypt:
 
         ## release the lock
         self.__lock_proc(False)
-        self.__KeyMap[id] = key
+        self.__KeyMap[id_] = key
         print("DH1080 Init: %s on %s" % (target,network))
         print("Key set to %r" % (key.key,))
         ## save key storage
@@ -1416,18 +1408,18 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## Answer from targets init
-    def dh1080_finish(self,word, word_eol, userdata):
-        id = self.get_id(nick=self.get_nick(word[0]))
+    def dh1080_finish(self, word, word_eol, userdata):
+        id_ = self.get_id(nick=self.get_nick(word[0]))
         message = word_eol[3]
-        target,network = id
+        target,network = id_
         ## fixme if not explicit send to the Target the received key is discarded - chan exchange
-        if id not in self.__KeyMap:
+        if id_ not in self.__KeyMap:
             print("Invalid DH1080 Received from %s on %s" % (target,network))
             return xchat.EAT_NONE
-        key = self.__KeyMap[id]
+        key = self.__KeyMap[id_]
         dh1080_unpack(message[1 : ], key.dh)
         key.key = dh1080_secret(key.dh)
-        key.keyname = id
+        key.keyname = id_
         print("DH1080 Finish: %s on %s" % (target,network))
         print("Key set to %r" % (key.key,))
         ## save key storage
@@ -1435,8 +1427,9 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## set cbc mode or show the status
-    def set_cbc(self,word, word_eol, userdata):
+    def set_cbc(self, word, word_eol, userdata):
         ## check for parameter
+        mode = None
         if len(word) >2:
             # if both specified first is target second is mode on/off
             target = word[1]
@@ -1448,10 +1441,10 @@ class XChatCrypt:
                 ## if one parameter set mode to it else show only
                 mode = word[1]
 
-        id = self.get_id(nick=target)
-        target,network = id
+        id_ = self.get_id(nick=target)
+        target,network = id_
         ## check if there is a key
-        key = self.find_key(id)
+        key = self.find_key(id_)
         if not key:
             print("No Key found for %r" % (target,))
         else:
@@ -1467,8 +1460,9 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## set key protection mode or show the status
-    def set_protect(self,word, word_eol, userdata):
+    def set_protect(self, word, word_eol, userdata):
         ## check for parameter
+        mode = None
         if len(word) >2:
             # if both specified first is target second is mode on/off
             target = word[1]
@@ -1480,13 +1474,13 @@ class XChatCrypt:
                 ## if one parameter set mode to it else show only
                 mode = word[1]
 
-        id = self.get_id(nick=target)
-        target,network = id
+        id_ = self.get_id(nick=target)
+        target,network = id_
         if "#" in target:
             print("We don't make channel protection. Sorry!")
             return xchat.EAT_ALL
 
-        key = self.find_key(id)
+        key = self.find_key(id_)
         ## check if there is a key
         if not key:
             print("No Key found for %r" % (target,))
@@ -1504,8 +1498,9 @@ class XChatCrypt:
 
 
     ## activate/deaktivate encryption für chan/nick
-    def set_act(self,word, word_eol, userdata):
+    def set_act(self, word, word_eol, userdata):
         ## if two parameter first is target second is mode on/off
+        mode = None
         if len(word) >2:
             target = word[1]
             mode = word[2]
@@ -1516,9 +1511,9 @@ class XChatCrypt:
                 ## if one parameter set mode to on/off
                 mode = word[1]
 
-        id = self.get_id(nick=target)
-        target,network = id
-        key = self.find_key(id)
+        id_ = self.get_id(nick=target)
+        target,network = id_
+        key = self.find_key(id_)
         ## key not found
         if not key:
             print("No Key found for %r" % (target,))
@@ -1535,7 +1530,7 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## handle topic server message
-    def server_332_topic(self,word, word_eol, userdata):
+    def server_332_topic(self, word, word_eol, userdata):
         ## check if allready processing
         if self.__chk_proc():
             return xchat.EAT_NONE
@@ -1563,7 +1558,7 @@ class XChatCrypt:
         return xchat.EAT_ALL
 
     ## trace nick changes
-    def nick_trace(self,word, word_eol, userdata):
+    def nick_trace(self, word, word_eol, userdata):
         old, new = word[0], word[1]
         ## create id's for old and new nick
         oldid,newid = (self.get_id(nick=old),self.get_id(nick=new))
@@ -1734,7 +1729,7 @@ def blowcrypt_unpack(msg, cipher):
     if not (msg.startswith('+OK ') or msg.startswith('mcps ')):
         raise ValueError
     _, rest = msg.split(' ', 1)
-    if (len(rest) % 12):
+    if len(rest) % 12 != 0:
         raise MalformedError
 
     try:
@@ -1978,24 +1973,23 @@ def dh1080_secret(ctx):
 
 if REQUIRESETUP:
     __install_thread = None
-    def _install_pyBlowfish(urllib,doExtra):
+
+    def _install_pyBlowfish(urllib, doExtra):
         global __install_thread
         if __install_thread:
             print("Install is allready running")
             return
         __install_thread = Thread(target=__install_pyBlowfish,kwargs={'urllib':urllib,'context':xchat.get_context()})
         __install_thread.start()
+
     def __install_pyBlowfish(urllib,context):
         global __install_thread
         context.prnt("\0038.....checking for pyBlowfish.py at %r... please wait ...." % PYBLOWFISHURL)
         try:
             __script = urllib.request.urlopen(PYBLOWFISHURL,timeout=40).read()
-            try:
-                __fd = open("%s%spyBlowfish.py" % (path,sep),"wb")
-                __fd.write(__script)
+            with open("%s%spyBlowfish.py" % (path,sep),"wb") as fd:
+                fd.write(__script)
                 print("\002\0033Please type /py reload %s" % script)
-            finally:
-                __fd.close()
         except urllib.error.URLError as err:
             print(err)
 
@@ -2011,6 +2005,7 @@ if REQUIRESETUP:
                 useproxy = False
         proxyload(_install_pyBlowfish,useproxy,None)
         return xchat.EAT_ALL
+
     xchat.hook_command('FISHSETUP', fishsetup)
 else:
     loadObj = XChatCrypt()
