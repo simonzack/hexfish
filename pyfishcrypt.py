@@ -271,8 +271,8 @@ except ImportError:
         """xor string a and b, both of length blocksize."""
         xored = []
         for i in range(8):
-            xored.append( chr(ord(a[i]) ^ ord(b[i])) )
-        return "".join(xored)
+            xored.append(a[i] ^ b[i])
+        return bytes(xored)
 
 if not isWindows:
     from threading import Thread
@@ -1634,7 +1634,7 @@ def cbc_encrypt(func, data, blocksize):
 
     ciphertext = IV
     for block_index in range(len(data) // blocksize):
-        xored = xorstring(data[:blocksize], IV)
+        xored = xorstring(data[:blocksize].encode(), IV)
         enc = func(xored)
 
         ciphertext += enc
@@ -1655,7 +1655,7 @@ def cbc_decrypt(func, data, blocksize):
     plaintext = ''
     for block_index in range(len(data) // blocksize):
         temp = func(data[0:blocksize])
-        temp2 = xorstring(temp, IV)
+        temp2 = xorstring(temp, IV).decode()
         plaintext += temp2
         IV = data[0:blocksize]
         data = data[blocksize:]
@@ -1796,7 +1796,7 @@ def dh1080_b64encode(s):
     m = 0x80
     i, j, k, t = 0, 0, 0, 0
     while i < L:
-        if ord(s[i >> 3]) & m:
+        if s[i >> 3] & m:
             t |= 1
         j += 1
         m >>= 1
@@ -1879,7 +1879,7 @@ def dh1080_b64decode(s):
         else:
             break
         k += 1
-    return ''.join(map(chr, d[0:i-1]))
+    return bytes(d[0:i-1])
 
 
 def dh_validate_public(public, q, p):
