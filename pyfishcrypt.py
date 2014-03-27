@@ -1130,7 +1130,7 @@ class XChatCrypt:
         else:
             encrypt_clz = Blowfish
             encrypt_func = blowcrypt_pack
-        b = encrypt_clz(key.key)
+        b = encrypt_clz(key.key.encode())
         return encrypt_func(msg, b)
 
     ## send message to local xchat and lock it
@@ -1620,7 +1620,7 @@ def padto(msg, length):
     If the length of msg is already a multiple of 'length', does nothing."""
     L = len(msg)
     if L % length:
-        msg = "%s%s" % (msg,'\x00' * (length - L % length))
+        msg += bytes(length - L % length)
     assert len(msg) % length == 0
     return msg
 
@@ -1635,7 +1635,7 @@ def cbc_encrypt(func, data, blocksize):
 
     ciphertext = IV
     for block_index in range(len(data) // blocksize):
-        xored = xorstring(data[:blocksize].encode(), IV)
+        xored = xorstring(data[:blocksize], IV)
         enc = func(xored)
 
         ciphertext += enc
@@ -1653,10 +1653,10 @@ def cbc_decrypt(func, data, blocksize):
     IV = data[0:blocksize]
     data = data[blocksize:]
 
-    plaintext = ''
+    plaintext = b''
     for block_index in range(len(data) // blocksize):
         temp = func(data[0:blocksize])
-        temp2 = xorstring(temp, IV).decode('utf-8', 'ignore')
+        temp2 = xorstring(temp, IV)
         plaintext += temp2
         IV = data[0:blocksize]
         data = data[blocksize:]
@@ -1693,8 +1693,8 @@ class BlowfishCBC:
 # XXX: Unstable.
 def blowcrypt_b64encode(s):
     """A non-standard base64-encode."""
-    B64 = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    res = []
+    B64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    res = bytearray()
     while s:
         left, right = struct.unpack('>LL', s[:8])
         for i in range(6):
@@ -1704,28 +1704,32 @@ def blowcrypt_b64encode(s):
             res.append( B64[left & 0x3f] )
             left >>= 6
         s = s[8:]
-    return "".join(res)
+    return bytes(res)
 
 def blowcrypt_b64decode(s):
     """A non-standard base64-decode."""
-    B64 = "./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    res = []
+    B64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    res = bytearray()
     while s:
         left, right = 0, 0
         for i, p in enumerate(s[0:6]):
             right |= B64.index(p) << (i * 6)
         for i, p in enumerate(s[6:12]):
             left |= B64.index(p) << (i * 6)
-        res.append( struct.pack('>LL', left, right) )
+        res.extend( struct.pack('>LL', left, right) )
         s = s[12:]
-    return "".join(res)
+    return bytes(res)
 
 def blowcrypt_pack(msg, cipher):
-    """."""
-    return '+OK %s' % (blowcrypt_b64encode(cipher.encrypt(padto(msg, 8))))
+    """
+    Uses strings instead of bytes as these are intended to be human-readable in irc clients.
+    """
+    return '+OK %s' % (blowcrypt_b64encode(cipher.encrypt(padto(msg.encode(), 8))))
 
 def blowcrypt_unpack(msg, cipher):
-    """."""
+    """
+    See blowcrypt_pack.
+    """
     if not (msg.startswith('+OK ') or msg.startswith('mcps ')):
         raise ValueError
     _, rest = msg.split(' ', 1)
@@ -1733,7 +1737,7 @@ def blowcrypt_unpack(msg, cipher):
         raise MalformedError
 
     try:
-        raw = blowcrypt_b64decode(rest)
+        raw = blowcrypt_b64decode(rest.encode())
     except TypeError:
         raise MalformedError
     if not raw:
@@ -1744,17 +1748,21 @@ def blowcrypt_unpack(msg, cipher):
     except ValueError:
         raise MalformedError
 
-    return plain.strip('\x00')
+    return plain.strip(b'\x00').decode('utf-8', 'ignore')
 
 ## Mircryption-CBC
 def mircryption_cbc_pack(msg, cipher):
-    """."""
-    padded = padto(msg, 8)
+    """
+    Uses strings instead of bytes as these are intended to be human-readable in irc clients.
+    """
+    padded = padto(msg.encode(), 8)
     return '+OK *%s' % (base64.b64encode(cipher.encrypt(padded)).decode())
 
 
 def mircryption_cbc_unpack(msg, cipher):
-    """."""
+    """
+    See mircryption_cbc_pack.
+    """
     if not (msg.startswith('+OK *') or msg.startswith('mcps *')):
         raise ValueError
 
@@ -1773,7 +1781,7 @@ def mircryption_cbc_unpack(msg, cipher):
     if not padded:
         raise MalformedError
 
-    return padded.strip('\x00')
+    return padded.strip(b'\x00').decode('utf-8', 'ignore')
 
 ## DH1080
 g_dh1080 = 2
