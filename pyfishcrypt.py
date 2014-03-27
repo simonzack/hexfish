@@ -665,7 +665,7 @@ class XChatCrypt:
     def cleanUpTargetMap(self):
         ## DB Cleanup
         for network in self.__TargetMap.values():
-            for target,value in network.items():
+            for target,value in list(network.items()):
                 if type(value[1]) != SecretKey or value[0] < time.time() - 60*60*24*7 or value[1] not in self.__KeyMap.values():
                     del network[target]
                     print("Expired: %r %r" % (target,value))
