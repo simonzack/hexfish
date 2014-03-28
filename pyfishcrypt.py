@@ -1547,7 +1547,6 @@ class XChatCrypt:
             return xchat.EAT_NONE
         ## decrypt
         topic = self.decrypt(key, topic[1:])
-        ##todo utf8 check for illegal chars
         if not topic:
             return xchat.EAT_NONE
         ## lock the target
