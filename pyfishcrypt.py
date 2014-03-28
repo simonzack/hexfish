@@ -1690,15 +1690,15 @@ class BlowfishCBC:
 # XXX: Unstable.
 def blowcrypt_b64encode(s):
     """A non-standard base64-encode."""
-    B64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    b64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
     res = bytearray()
     while s:
         left, right = struct.unpack('>LL', s[:8])
         for i in range(6):
-            res.append( B64[right & 0x3f] )
+            res.append( b64[right & 0x3f] )
             right >>= 6
         for i in range(6):
-            res.append( B64[left & 0x3f] )
+            res.append( b64[left & 0x3f] )
             left >>= 6
         s = s[8:]
     return bytes(res)
