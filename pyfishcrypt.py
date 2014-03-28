@@ -1013,7 +1013,6 @@ class XChatCrypt:
             ret = None
         return ret
 
-
     ## mark outgoing message being  prefixed with a command like /notice /msg ...
     def out_message_cmd(self, word, word_eol, userdata):
         return self.out_message(word, word_eol, userdata,command=True)
