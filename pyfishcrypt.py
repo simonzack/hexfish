@@ -213,19 +213,15 @@ except ImportError:
     sys.exit("should be run from xchat plugin with python enabled")
 
 import pickle
-## check for Windows
-import platform
-sep = "/"
-isWindows = (platform.system() == "Windows")
-if isWindows:
-    sep = "\\"
 
 ## append current path
 import inspect
 scriptname = inspect.currentframe().f_code.co_filename
-script = "".join(scriptname.split(sep)[-1:])
-path = sep.join(scriptname.split(sep)[:-1])
-sys.path.insert(1,path)
+if scriptname!='<script>':
+    path, script = os.path.split(scriptname)
+    sys.path.insert(1, path)
+else:
+    path = ''
 
 try:
     SCRIPTCHKSUM = hashlib.sha1(open(scriptname,'rb').read()).hexdigest()
@@ -275,33 +271,7 @@ except ImportError:
             xored.append(a[i] ^ b[i])
         return bytes(xored)
 
-if not isWindows:
-    from threading import Thread
-else:
-    class Thread:
-        def __init__(self, target=None, args=None, kwargs=None, name='Thread*'):
-            if args is None:
-                args = []
-            if kwargs is None:
-                kwargs = {}
-            self.__target = target
-            self.__args = args
-            self.__kwargs = kwargs
-            self.__name = name
-            self.__hook = None
-
-        def start(self):
-            print("-Starting Pseudo Thread")
-            self.__hook = xchat.hook_timer(1,self.__thread,(self.__target,self.__args,self.__kwargs))
-
-        def __thread(self,userdata):
-            try:
-                _thread,args,kwargs = userdata
-                _thread(*args,**kwargs)
-            finally:
-                xchat.unhook(self.__hook)
-                self.__hook = None
-                return False
+from threading import Thread
 
 import socket
 REALSOCKET = socket.socket
