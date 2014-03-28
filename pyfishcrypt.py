@@ -993,10 +993,8 @@ class XChatCrypt:
             decrypt_clz = Blowfish
             decrypt_func = blowcrypt_unpack
 
+        b = decrypt_clz(key.key.encode())
         try:
-            b = decrypt_clz(key.key.encode())
-            #if msg[-2:-1] == " ":
-            #   msg = msg[:-2]
             ret = decrypt_func(msg, b)
         except MalformedError:
             try:
