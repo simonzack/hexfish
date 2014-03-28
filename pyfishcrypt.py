@@ -607,11 +607,10 @@ class XChatCrypt:
         if do_extra and self._updated_source:
             do_extra(context)
 
-
     ## Load key storage
     def load_db(self):
         db = None
-        with open(os.path.join(path,'fish3.pickle'),'rb') as hnd:
+        with open(os.path.join(xchat.get_info('configdir'), 'fish3.pickle'),'rb') as hnd:
             data = hnd.read()
             ## set DB loaded to False as we have a file we don't want to create a new
             self.status['LOADED'] = False
@@ -677,7 +676,7 @@ class XChatCrypt:
         if not self.status['LOADED']:
             print("Key Storage not loaded, no save. use /DBLOAD to load it")
             return
-        with open(os.path.join(path,'fish3.pickle'),'wb') as hnd:
+        with open(os.path.join(xchat.get_info('configdir'), 'fish3.pickle'),'wb') as hnd:
             data = pickle.dumps({
                 'KeyMap': self.__KeyMap,
                 'TargetMap': self.__TargetMap,
