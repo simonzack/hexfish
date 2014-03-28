@@ -1687,7 +1687,6 @@ class BlowfishCBC:
         return cbc_encrypt(self.blowfish.encrypt, data, 8)
 
 ## blowcrypt, Fish etc.
-# XXX: Unstable.
 def blowcrypt_b64encode(s):
     """A non-standard base64-encode."""
     b64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
