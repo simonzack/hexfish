@@ -1957,7 +1957,7 @@ if REQUIRESETUP:
         context.prnt("\0038.....checking for pyBlowfish.py at %r... please wait ...." % PYBLOWFISHURL)
         try:
             __script = urllib.request.urlopen(PYBLOWFISHURL,timeout=40).read()
-            with open("%s%spyBlowfish.py" % (path,sep),"wb") as fd:
+            with open(os.path.join(path, "pyBlowfish.py"),"wb") as fd:
                 fd.write(__script)
                 print("\002\0033Please type /py reload %s" % script)
         except urllib.error.URLError as err:
