@@ -37,24 +37,37 @@ except ImportError:
         print("This module requires one of PyCrypto, pyBlowfish")
 
 try:
-    from Crypto.Util.strxor import strxor as xorstring
+    from Crypto.Util.strxor import strxor as xorbytes
 except ImportError:
-    ## use slower python only xor
-    def xorstring(a, b): # Slow.
-        """xor string a and b, both of length blocksize."""
-        xored = []
-        for i in range(8):
-            xored.append(a[i] ^ b[i])
+    # define a slower python xor
+    def xorbytes(a, b):
+        '''
+        xor two byte strings of equivalent length
+        '''
+        if len(a)!=len(b):
+            raise ValueError('strings not of equivalent length')
+        xored = bytearray()
+        for ac, bc in zip(a, b):
+            xored.append(ac ^ bc)
         return bytes(xored)
 
-def makedict(**kwargs):
-    return kwargs
-
-COLOR = makedict(white="\0030", black="\0031", blue="\0032", red="\0034",
-    dred="\0035", purple="\0036", dyellow="\0037", yellow="\0038", bgreen="\0039",
-    dgreen="\00310", green="\00311", bpurple="\00313", dgrey="\00314",
-    lgrey="\00315", close="\003")
-
+COLOR = {
+	'white': '\0030',
+	'black': '\0031',
+	'blue': '\0032',
+	'red': '\0034',
+	'dred': '\0035',
+	'purple': '\0036',
+	'dyellow': '\0037',
+	'yellow': '\0038',
+	'bgreen': '\0039',
+	'dgreen': '\00310',
+	'green': '\00311',
+	'bpurple': '\00313',
+	'dgrey': '\00314',
+	'lgrey': '\00315',
+	'close': '\003'
+}
 
 class SecretKey(object):
     def __init__(self, dh, key=None,protectmode=False,cbcmode=False):
@@ -1218,7 +1231,7 @@ def cbc_encrypt(func, data, blocksize):
 
     ciphertext = iv
     for block_index in range(len(data) // blocksize):
-        xored = xorstring(data[:blocksize], iv)
+        xored = xorbytes(data[:blocksize], iv)
         enc = func(xored)
 
         ciphertext += enc
@@ -1239,7 +1252,7 @@ def cbc_decrypt(func, data, blocksize):
     plaintext = b''
     for block_index in range(len(data) // blocksize):
         temp = func(data[0:blocksize])
-        temp2 = xorstring(temp, iv)
+        temp2 = xorbytes(temp, iv)
         plaintext += temp2
         iv = data[0:blocksize]
         data = data[blocksize:]
