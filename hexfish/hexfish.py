@@ -7,11 +7,6 @@ __module_description__ = 'fish encryption in pure python'
 
 ISBETA = ""
 
-UPDATEURL = 'http://pastebin.com/raw.php?i=ZWGAhvix'
-BETAUPDATEURL = 'http://pastebin.com/raw.php?i=MFUhcYA2'
-PYBLOWFISHURL = "http://pastebin.com/raw.php?i=nkExr9zu"
-SOCKSIPYURL = 'http://socksipy-branch.googlecode.com/svn/trunk/socks.py'
-
 ONMODES = ["Y","y","j","J","1","yes","on","ON","Yes","True","true"]
 YESNO = lambda x: (x==0 and "N") or "Y"
 
@@ -41,41 +36,16 @@ else:
     path = ''
 
 try:
-    SCRIPTCHKSUM = hashlib.sha1(open(scriptname,'rb').read()).hexdigest()
-except OSError:
-    print("\0034** Could not get the source file's checksum.")
-    SCRIPTCHKSUM = ''
-
-REQUIRESETUP = False
-
-try:
     import Crypto.Cipher.Blowfish as cBlowfish
 except ImportError:
     try:
         import pyBlowfish as cBlowfish
-        pyBlowfishlocation = "%s.py" % str(cBlowfish)[str(cBlowfish).find("from '")+6:str(cBlowfish).find(".py")]
-        chksum = hashlib.sha1(open(pyBlowfishlocation,'rb').read()).hexdigest()
-        validVersion = {'35c1b6cd5af14add86dc0cf3f0309a185c308dcd':0.4,'877ae9de309685c975a6d120760c1ff9b4c55719':0.5, '57117e7c9c7649bf490589b7ae06a140e82664c6':0.5}.get(chksum,-1)
-        if validVersion == -1:
-            print("\0034** Loaded pyBlowfish.py with checksum: %s is untrusted" % chksum)
-        else:
-            if validVersion < 0.5:
-                print("\0034** Loaded pyBlowfish.py (%.1f) with checksum: %s is too old" % (validVersion,chksum))
-                REQUIRESETUP = True
-            else:
-                print("\0033** Loaded pyBlowfish.py Version %.1f with checksum: %s" % (validVersion,chksum))
 
     except ImportError:
         cBlowfish = None
 
-        import platform
         print("\002\0034No Blowfish implementation")
-        print("This module requires PyCrypto / The Python Cryptographic Toolkit.")
-        print("Get it from http://www.dlitz.net/software/pycrypto/ or http://www.voidspace.org.uk/python/modules.shtml#pycrypto")
-        print("Download Python only Blowfish at %s" % PYBLOWFISHURL)
-        print("or type \002/FISHSETUP\002 for automatic install of that")
-
-        REQUIRESETUP = True
+        print("This module requires one of PyCrypto, pyBlowfish")
 
 try:
     from Crypto.Util.strxor import strxor as xorstring
@@ -118,38 +88,6 @@ class SecretKey(object):
     def __repr__(self):
         return "%s" % self.key
 
-
-def proxyload(_thread,_useproxy,do_extra):
-    socket.socket = REALSOCKET
-    if xchat.get_prefs('net_proxy_type') > 0 and _useproxy:
-        try:
-            import socks
-        except ImportError:
-            print("\0034python-socksipy not installed")
-            print("sudo apt-get install python-socksipy")
-            print("or install %s" % SOCKSIPYURL)
-            print("or just use the noproxy option with /FISHUPDATE and /FISHSETUP")
-            return xchat.EAT_ALL
-
-        proxytype = [0,-1,socks.PROXY_TYPE_SOCKS4,socks.PROXY_TYPE_SOCKS5,socks.PROXY_TYPE_HTTP,-1][xchat.get_prefs('net_proxy_type')]
-        nameproxytype = ['','Socks4a','Socks5','HTTP','']
-        if proxytype < 0:
-            print("\0034Proxytype not suported for updates")
-            return xchat.EAT_ALL
-        proxyuser = xchat.get_prefs('net_proxy_user')
-        proxypass = xchat.get_prefs('net_proxy_pass')
-        if len(proxyuser) < 1 or len(proxypass) < 1:
-            proxyuser = proxypass = None
-        socks.setdefaultproxy(proxytype,xchat.get_prefs('net_proxy_host'),xchat.get_prefs('net_proxy_port'),rdns=True,username=proxyuser,password=proxypass)
-        print("\00310using xchat proxy settings \0037Type: %s Host: %s Port: %s" % (nameproxytype[proxytype],xchat.get_prefs('net_proxy_host'),xchat.get_prefs('net_proxy_port')))
-
-        ## Replace default socket
-        socket.socket = socks.socksocket
-
-    import urllib
-    import urllib.request, urllib.error, urllib.parse
-    _thread(urllib,do_extra)
-
 def destroy_object(_):
     global load_obj
     del load_obj
@@ -158,7 +96,6 @@ def destroy_object(_):
 class XChatCrypt:
     def __init__(self):
         print("%sFishcrypt Version %s %s\003" % (COLOR['blue'],__module_version__,ISBETA))
-        print("SHA1 checksum: %r" % SCRIPTCHKSUM)
         self.active = True
         self.__KeyMap = {}
         self.__TargetMap = {}
@@ -167,9 +104,7 @@ class XChatCrypt:
             'PLAINTEXTMARKER' : '+p',
             'DEFAULTCBC' : True,
             'DEFAULTPROTECT' : False,
-            'FISHUPDATETIMEOUT' : 30,
             'MAXMESSAGELENGTH' : 300,
-            'USEPROXYUPDATE' : True,
             'FISHBETAVERSION': True,
             'FISHDEVELOPDEBUG': False,
             'AUTOBACKUP': True,
@@ -181,8 +116,6 @@ class XChatCrypt:
             'CRYPTDB' : False,
             'LOADED' : True
         }
-        self.__update_thread = None
-        self._updated_source = None
         self.__hooks = []
         self.__hooks.append(xchat.hook_command('SETKEY', self.set_key, help='set a new key for a nick or channel /SETKEY <nick>/#chan [new_key]'))
         self.__hooks.append(xchat.hook_command('KEYX', self.key_exchange, help='exchange a new pub key, /KEYX <nick>'))
@@ -194,9 +127,6 @@ class XChatCrypt:
 
         self.__hooks.append(xchat.hook_command('PRNCRYPT', self.prn_crypt, help='print msg encrpyted localy , /PRNCRYPT <msg>'))
         self.__hooks.append(xchat.hook_command('PRNDECRYPT', self.prn_decrypt, help='print msg decrpyted localy , /PRNDECRYPT <msg>'))
-
-        self.__hooks.append(xchat.hook_command('UPDATE', self.update, help='Update this Script'))
-        self.__hooks.append(xchat.hook_command('FISHUPDATE', self.fishupdate, help='Update this Script'))
 
         ## check for password sets
         self.__hooks.append(xchat.hook_command('SET',self.settings))
@@ -243,10 +173,6 @@ class XChatCrypt:
         if word[1].upper() == "FISHCRYPT":
             print("")
             print("\002\0032 ****  fishcrypt.py Version: %s %s ****" % (__module_version__, ISBETA))
-            if self.config['FISHBETAVERSION']:
-                print("\0036Beta download %s" % BETAUPDATEURL)
-
-            print("\0036 %s" % UPDATEURL)
             print("\n")
             print(" \002\00314***************** Fishcrypt Help ********************")
             print(" -----------------------------------------------------")
@@ -264,7 +190,6 @@ class XChatCrypt:
             print("/DBLOAD \00314loads the Key Storage")
             print("/PRNDECRYPT \00314decrypts messages localy")
             print("/PRNCRYPT \00314encrypts messages localy")
-            print("/FISHUPDATE \00314check online for new Version and update")
             print("/SET [fishcrypt] \00314show/set fishcrypt settings")
             return xchat.EAT_ALL
 
@@ -272,20 +197,7 @@ class XChatCrypt:
         if word[0] not in ["65289","65056"]:
             return xchat.EAT_NONE
         input_ = xchat.get_info('inputbox')
-        if input_.upper().startswith("/UPDATE FISHCRYPT I"):
-            newinput = "/UPDATE FISHCRYPT INSTALL"
-        elif input_.upper().startswith("/UPDATE FISHCRYPT D"):
-            newinput = "/UPDATE FISHCRYPT DIFF"
-        elif input_.upper().startswith("/UPDATE FISHCRYPT C"):
-            newinput = "/UPDATE FISHCRYPT CHANGES"
-        elif input_.upper().startswith("/UPDATE FISHCRYPT L"):
-            newinput = "/UPDATE FISHCRYPT LOAD"
-        elif input_.upper() == "/UPDATE FISHCRYPT ":
-            print("LOAD INSTALL DIFF CHANGES")
-            return xchat.EAT_NONE
-        elif input_.upper().startswith("/UPDATE F"):
-            newinput = "/UPDATE FISHCRYPT "
-        elif input_.upper().startswith("/HELP F"):
+        if input_.upper().startswith("/HELP F"):
             newinput = "/HELP FISHCRYPT "
         elif input_.upper().startswith("/SET F"):
             newinput = "/SET FISHCRYPT "
@@ -294,105 +206,6 @@ class XChatCrypt:
         xchat.command("SETTEXT %s" % newinput)
         xchat.command("SETCURSOR %d" % len(newinput))
         return xchat.EAT_PLUGIN
-
-    def fishupdate(self, word, word_eol, userdata):
-        return self.update(["UPDATE","FISHCRYPT","INSTALL"],None,None)
-
-    def update(self, word, word_eol, userdata):
-        useproxy = self.config['USEPROXYUPDATE']
-        if len(word) <3:
-            print("\00313Fishcrypt.py Updater")
-            print("\00313/UPDATE FISHCRYPT [LOAD,CHANGES,DIFF,INSTALL]")
-            return xchat.EAT_XCHAT
-        if word[1].upper() != "FISHCRYPT":
-            return xchat.EAT_NONE
-        if self.__update_thread:
-            print("\0034Update Thread already running")
-            return xchat.EAT_ALL
-        _doExtra = None
-        if word[2].lower() == "diff":
-            if self._updated_source:
-                self._update_diff(xchat.get_context())
-            else:
-                _doExtra = self._update_diff
-        if word[2].lower() == "changes":
-            if self._updated_source:
-                self._update_changes(xchat.get_context())
-            else:
-                _doExtra = self._update_changes
-        if word[2].lower() == "install":
-            if self._updated_source:
-                self._update_install(xchat.get_context())
-            else:
-                _doExtra = self._update_install
-        if word[2].lower() == "load" or _doExtra:
-            proxyload(self._update,useproxy,_doExtra)
-
-        return xchat.EAT_ALL
-
-    def _update(self, urllib, do_extra):
-        self.__update_thread = Thread(target=self.__update,kwargs={'urllib':urllib,'context':xchat.get_context(),'do_extra':do_extra},name='fishcrypt_update')
-        self.__update_thread.start()
-
-    def _update_install(self,context):
-        try:
-            with open(scriptname, "wb") as fd:
-                fd.write(self._updated_source)
-            context.prnt( "\00310UPDATE Complete \r\nplease reload the script (/py reload %s)" % (script,) )
-        except:
-            context.prnt( "\002\0034UPDATE FAILED" )
-            raise
-
-    def _update_diff(self, context):
-        currentscript = open(scriptname,"rb").read()
-        import difflib
-        for line in difflib.unified_diff(currentscript.splitlines(True), self._updated_source.splitlines(True)):
-            context.prnt(line)
-
-    def _update_changes(self,context):
-        currentscript = open(scriptname,"rb").read().decode()
-        import difflib
-        for line in difflib.ndiff(
-                currentscript[currentscript.find("# Changelog:"):currentscript.find("__module_name__")].splitlines(True),
-                self._updated_source[self._updated_source.find("# Changelog:"):self._updated_source.find("__module_name__")].splitlines(1)
-            ):
-            if len(line) > 2:
-                if line[0] in ["+","-"]:
-                    context.prnt( line[2:])
-
-    def __update(self,urllib,context,do_extra):
-        url = UPDATEURL
-        if self.config['FISHBETAVERSION']:
-            url = BETAUPDATEURL
-        context.prnt("\0038.....checking for updates at %r... please wait ...." % url)
-        try:
-            try:
-                __updatescript = urllib.request.urlopen(url,timeout=self.config['FISHUPDATETIMEOUT']).read()
-                __updateversion = re.search("__module_version__ = '([0-9]+\.[0-9]+)'",__updatescript)
-                if __updateversion:
-                    if float(__module_version__) < float(__updateversion.group(1)) or ISBETA != "":
-                        updatechksum = hashlib.sha1(__updatescript).hexdigest()
-                        if SCRIPTCHKSUM != updatechksum:
-                            self._updated_source = __updatescript
-                            context.prnt( "\00310Download Version %s with checksum %r complete" % (__updateversion.group(1),updatechksum))
-                        else:
-                            context.prnt( "\00310No new version available - checksums match")
-                    else:
-                        context.prnt( "\0032%sVersion %s is up to date (found Version %s)" % (__module_name__,__module_version__,__updateversion.group(1)) )
-                else:
-                    context.prnt( "\0034NO VALID PLUGIN FOUND AT %s" % (url,) )
-            except urllib.error.URLError as err:
-                context.prnt( "\002\0034LOAD FAILED" )
-                context.prnt( "%r" % (err,) )
-
-            except:
-                context.prnt( "\002\0034LOAD FAILED" )
-                context.prnt("%r" % (sys.exc_info(),))
-        finally:
-            self.__update_thread = None
-            context.prnt( "\00310Update Thread finished" )
-        if do_extra and self._updated_source:
-            do_extra(context)
 
     ## Load key storage
     def load_db(self):
@@ -1763,41 +1576,4 @@ def dh1080_secret(ctx):
         raise ValueError
     return dh1080_b64encode(sha256(int2bytes(ctx.secret)))
 
-if REQUIRESETUP:
-    __install_thread = None
-
-    def _install_pyblowfish(urllib, do_extra):
-        global __install_thread
-        if __install_thread:
-            print("Install is allready running")
-            return
-        __install_thread = Thread(target=__install_pyblowfish,kwargs={'urllib':urllib,'context':xchat.get_context()})
-        __install_thread.start()
-
-    def __install_pyblowfish(urllib,context):
-        global __install_thread
-        context.prnt("\0038.....checking for pyBlowfish.py at %r... please wait ...." % PYBLOWFISHURL)
-        try:
-            __script = urllib.request.urlopen(PYBLOWFISHURL,timeout=40).read()
-            with open(os.path.join(path, "pyBlowfish.py"),"wb") as fd:
-                fd.write(__script)
-                print("\002\0033Please type /py reload %s" % script)
-        except urllib.error.URLError as err:
-            print(err)
-
-        except:
-            context.prnt( "\002\0034INSTALL FAILED" )
-            raise
-        __install_thread = None
-
-    def fishsetup(word, word_eol, userdata):
-        useproxy = True
-        if len(word) >1:
-            if word[1].lower() == "noproxy":
-                useproxy = False
-        proxyload(_install_pyblowfish,useproxy,None)
-        return xchat.EAT_ALL
-
-    xchat.hook_command('FISHSETUP', fishsetup)
-else:
-    load_obj = XChatCrypt()
+load_obj = XChatCrypt()
