@@ -13,10 +13,6 @@ __module_description__ = 'fish encryption in pure python'
 
 commands = []
 
-def register_command(cls):
-    cls.name
-
-
 class HexChatCommand:
     def _main(self, argv):
         try:
@@ -27,22 +23,12 @@ class HexChatCommand:
     def main(self, argv):
         raise NotImplementedError
 
-
-class HexFish:
+class HexFishCommands:
     def __init__(self):
-        print(add_color('blue', '{} version {}{}'.format(__module_name__, __module_version__, __module_description__)))
-        self.active = True
-        self.__KeyMap = {}
-        self.__TargetMap = {}
-        self.__lockMAP = {}
+        self.commands = {}
+        # all commands are subcommands of /fish, so that namespaces have a cleaner separation
+        xchat.hook_command('FISH', self.main_command, help='hexfish')
 
-        self.status = {
-            'CHKPW': None,
-            'DBPASSWD' : None,
-            'CRYPTDB' : False,
-            'LOADED' : True
-        }
-        self.__hooks = []
         self.__hooks.append(xchat.hook_command('SETKEY', self.set_key, help='set a new key for a nick or channel /SETKEY <nick>/#chan [new_key]'))
         self.__hooks.append(xchat.hook_command('KEYX', self.key_exchange, help='exchange a new pub key, /KEYX <nick>'))
         self.__hooks.append(xchat.hook_command('KEY', self.show_key, help='list key of a nick or channel or all (*), /KEY [nick/#chan/*]' ))
@@ -67,28 +53,6 @@ class HexFish:
         self.__hooks.append(xchat.hook_command('MSG+', self.out_message_force))
         self.__hooks.append(xchat.hook_command('NOTICE', self.out_message_cmd))
         self.__hooks.append(xchat.hook_command('NOTICE+', self.out_message_force))
-
-        self.__hooks.append(xchat.hook_server('notice', self.on_notice,priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_server('332', self.server_332_topic,priority=xchat.PRI_HIGHEST))
-
-        self.__hooks.append(xchat.hook_print('Notice Send',self.on_notice_send, 'Notice',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Change Nick', self.nick_trace))
-        self.__hooks.append(xchat.hook_print('Channel Action', self.in_message, 'Channel Action',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Action to Dialog', self.in_message, 'Private Action to Dialog',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Action ', self.in_message, 'Private Action',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Channel Message', self.in_message, 'Channel Message',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Message to Dialog', self.in_message, 'Private Message to Dialog',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_print('Private Message', self.in_message, 'Private Message',priority=xchat.PRI_HIGHEST))
-        self.__hooks.append(xchat.hook_unload(self.__destroy))
-        self.load_db()
-
-    def __destroy(self, userdata):
-        for hook in self.__hooks:
-            xchat.unhook(hook)
-        del self
-
-    def __del__(self):
-        print("\00311fishcrypt.py successfully unloaded")
 
     def get_help(self, word, word_eol, userdata):
         if len(word) < 2:
@@ -116,6 +80,269 @@ class HexFish:
             print("/PRNCRYPT \00314encrypts messages localy")
             print("/SET [fishcrypt] \00314show/set fishcrypt settings")
             return xchat.EAT_ALL
+
+    def register_command(self, name, callback, userdata=None, priority=xchat.PRI_NORM, help=None, usage=None):
+        self.commands.append()
+
+    ## print encrypted localy
+    @HexFishCommands.register_command()
+    def prn_crypt(self, word, word_eol, userdata):
+        id_ = self.get_id()
+        target, network = id_
+        key = self.find_key(id_)
+        if len(word_eol) < 2:
+            print("usage: /PRNCRYPT <msg to encrypt>")
+        else:
+            if key:
+                print("%s%s" % (COLOR['blue'],self.encrypt(key,word_eol[1])))
+            else:
+                print("%sNo known Key found for %s" % (COLOR['red'],target,))
+        return xchat.EAT_ALL
+
+    ## print decrypted localy
+    def prn_decrypt(self, word, word_eol, userdata):
+        id_ = self.get_id()
+        target, network = id_
+        key = self.find_key(id_)
+        if len(word_eol) < 2:
+            print("usage: /PRNDECRYPT <msg to decrypt>")
+        else:
+            if key:
+                print("%s%s" % (COLOR['blue'],self.decrypt(key,word_eol[1])))
+            else:
+                print("%sNo known Key found for %s" % (COLOR['red'],target,))
+        return xchat.EAT_ALL
+
+
+    ## manual set a key for a nick or channel
+    def set_key(self, word, word_eol, userdata):
+        id_ = self.get_id()
+        target, network = id_
+
+        ## if more than 2 parameter the nick/channel target is set to para 1 and the key is para 2
+        if len(word) > 2:
+            target = word[1]
+            if target.find("@") > 0:
+                target,network = target.split("@",1)
+            newkey = word[2]
+            id_ = (target,network)
+        ## else the current channel/nick is taken as target and the key is para 1
+        else:
+            newkey = word[1]
+        if len(newkey) < 8 or len(newkey) > 56:
+            print("Key must be between 8 and 56 chars")
+            return xchat.EAT_ALL
+        ## get the Keyobject if available or get a new one
+        key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+        ## set the key
+        key.key = newkey
+        key.keyname = id_
+        ## put it in the key dict
+        self.__KeyMap[id_] = key
+
+        print("Key for %s on Network %s set to %r" % ( target,network,newkey))
+        ## save the key storage
+        self.save_db()
+        return xchat.EAT_ALL
+
+    ## delete a key or all
+    def del_key(self, word, word_eol, userdata):
+        ## don't accept no parameter
+        if len(word) <2:
+            print("Error: /DELKEY nick|channel|* (* deletes all keys)")
+            return xchat.EAT_ALL
+        target = word_eol[1]
+        ## if target name is * delete all
+        if target == "*":
+            self.__KeyMap = {}
+        else:
+            if target.find("@") > 0:
+                target,network = target.split("@",1)
+                id_ = target,network
+            else:
+                id_ = self.get_id(nick=target)
+                target,network = id_
+            ## try to delete the key
+            try:
+                del self.__KeyMap[id_]
+                print("Key for %s on %s deleted" % (target,network))
+            except KeyError:
+                print("Key %r not found" % (id_,))
+        ## save the keystorage
+        self.save_db()
+        return xchat.EAT_ALL
+
+    ## show either key for current chan/nick or all
+    def show_key(self, word, word_eol, userdata):
+        ## if no parameter show key for current chan/nick
+        if len(word) <2:
+            id_ = self.get_id()
+        else:
+            target = word_eol[1]
+            network = ""
+            if target.find("@") > 0:
+                target,network = target.split("@",1)
+                if network.find("*") > -1:
+                    network = network[:-1]
+            ## if para 1 is * show all keys and there states
+            if target.find("*") > -1:
+                print(" -------- nick/chan ------- -------- network ------- -ON- -CBC- -PROTECT- -------------------- Key --------------------")
+                for id_, keys in self.__KeyMap.items():
+                    if id_[0].startswith(target[:-1]) and id_[1].startswith(network):
+                        print("  %-26.26s %-22.22s  %2.2s   %3.3s   %5.5s      %s" % (id_[0],id_[1],YESNO(keys.active),YESNO(keys.cbc_mode),YESNO(keys.protect_mode),keys.key))
+
+                return xchat.EAT_ALL
+            ## else get the id for the target
+            id_ = self.get_id(nick=target)
+
+        ## get the Key
+        key = self.find_key(id_)
+        if key:
+            ## show Key for the specified chan/nick
+            print("[ %s ] Key: %s - Active: %s - CBC: %s - PROTECT: %s" % (key,key.key,YESNO(key.active),YESNO(key.cbc_mode),YESNO(key.protect_mode)))
+        else:
+            print("No Key found")
+        return xchat.EAT_ALL
+
+    ## set cbc mode or show the status
+    def set_cbc(self, word, word_eol, userdata):
+        ## check for parameter
+        mode = None
+        if len(word) >2:
+            # if both specified first is target second is mode on/off
+            target = word[1]
+            mode = word[2]
+        else:
+            ## if no target defined target is current chan/nick
+            target = None
+            if len(word) >1:
+                ## if one parameter set mode to it else show only
+                mode = word[1]
+
+        id_ = self.get_id(nick=target)
+        target,network = id_
+        ## check if there is a key
+        key = self.find_key(id_)
+        if not key:
+            print("No Key found for %r" % (target,))
+        else:
+            ## if no parameter show only status
+            if len(word) == 1:
+                print("CBC Mode is %s" % ((key.cbc_mode and "on" or "off"),))
+            else:
+                ## set cbc mode to on/off
+                key.cbc_mode = bool(mode in ONMODES)
+                print("set CBC Mode for %s to %s" % (target,(key.cbc_mode == True and "on") or "off"))
+                ## save key storage
+                self.save_db()
+        return xchat.EAT_ALL
+
+    ## set key protection mode or show the status
+    def set_protect(self, word, word_eol, userdata):
+        ## check for parameter
+        mode = None
+        if len(word) >2:
+            # if both specified first is target second is mode on/off
+            target = word[1]
+            mode = word[2]
+        else:
+            ## if no target defined target is current nick, channel is not allowed/possible yet
+            target = None
+            if len(word) >1:
+                ## if one parameter set mode to it else show only
+                mode = word[1]
+
+        id_ = self.get_id(nick=target)
+        target,network = id_
+        if "#" in target:
+            print("We don't make channel protection. Sorry!")
+            return xchat.EAT_ALL
+
+        key = self.find_key(id_)
+        ## check if there is a key
+        if not key:
+            print("No Key found for %r" % (target,))
+        else:
+            ## if no parameter show only status
+            if len(word) == 1:
+                print("KEY Protection is %s" % ((key.protect_mode and "on" or "off"),))
+            else:
+                ## set KEY Protection mode to on/off
+                key.protect_mode = bool(mode in ONMODES)
+                print("set KEY Protection for %s to %s" % (target,(key.protect_mode == True and "on") or "off"))
+                ## save key storage
+                self.save_db()
+        return xchat.EAT_ALL
+
+    ## activate/deaktivate encryption für chan/nick
+    def set_act(self, word, word_eol, userdata):
+        ## if two parameter first is target second is mode on/off
+        mode = None
+        if len(word) >2:
+            target = word[1]
+            mode = word[2]
+        else:
+            ## target is current chan/nick
+            target = None
+            if len(word) >1:
+                ## if one parameter set mode to on/off
+                mode = word[1]
+
+        id_ = self.get_id(nick=target)
+        target,network = id_
+        key = self.find_key(id_)
+        ## key not found
+        if not key:
+            print("No Key found for %r" % (target,))
+        else:
+            if len(word) == 1:
+                ## show only
+                print("Encryption is %s" % ((key.active and "on" or "off"),))
+            else:
+                ## set mode to on/off
+                key.active = bool(mode in ONMODES)
+                print("set Encryption for %s to %s" % (target,(key.active == True and "on") or "off"))
+                ## save key storage
+                self.save_db()
+        return xchat.EAT_ALL
+
+
+class HexFish:
+    def __init__(self):
+        print(add_color('blue', '{} version {}{}'.format(__module_name__, __module_version__, __module_description__)))
+        self.active = True
+        self.__KeyMap = {}
+        self.__TargetMap = {}
+        self.__lockMAP = {}
+
+        self.status = {
+            'CHKPW': None,
+            'DBPASSWD' : None,
+            'CRYPTDB' : False,
+            'LOADED' : True
+        }
+        self.__hooks = []
+        self.__hooks.append(xchat.hook_server('notice', self.on_notice,priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_server('332', self.server_332_topic,priority=xchat.PRI_HIGHEST))
+
+        self.__hooks.append(xchat.hook_print('Notice Send',self.on_notice_send, 'Notice',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Change Nick', self.nick_trace))
+        self.__hooks.append(xchat.hook_print('Channel Action', self.in_message, 'Channel Action',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Action to Dialog', self.in_message, 'Private Action to Dialog',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Action ', self.in_message, 'Private Action',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Channel Message', self.in_message, 'Channel Message',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Message to Dialog', self.in_message, 'Private Message to Dialog',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_print('Private Message', self.in_message, 'Private Message',priority=xchat.PRI_HIGHEST))
+        self.__hooks.append(xchat.hook_unload(self.__destroy))
+        self.load_db()
+
+    def __destroy(self, userdata):
+        for hook in self.__hooks:
+            xchat.unhook(hook)
+        del self
+
+    def __del__(self):
+        print("\00311fishcrypt.py successfully unloaded")
 
     ## incoming notice received
     def on_notice(self, word, word_eol, userdata):
@@ -313,32 +540,28 @@ class HexFish:
         return xchat.EAT_NONE
 
     def decrypt(self, key, msg):
-        ## check for CBC
-        if 3 <= msg.find(' *') <= 4:
-            decrypt_clz = BlowfishCBC
-            decrypt_func = mircryption_cbc_unpack
-        else:
-            decrypt_clz = Blowfish
-            decrypt_func = blowcrypt_unpack
+        ret = None
 
-        b = decrypt_clz(key.key.encode())
+        # check for CBC
+        if 3 <= msg.find(' *') <= 4:
+            crypt_cls = BlowCryptCBC
+        else:
+            crypt_cls = BlowCrypt
+
+        bf = crypt_cls(key.key.encode())
         try:
-            ret = decrypt_func(msg, b)
-        except MalformedError:
+            ret = bf.decrypt(msg)
+        except ValueError:
+            # try to decrypt a part of the message
             try:
-                cut = (len(msg) -4)%12
+                cut = (len(msg) - 4)%12
                 if cut > 0:
                     msg = msg[:cut *-1]
-                    ret = "%s%s" % ( decrypt_func(msg, b), " \0038<<incomplete>>" * (cut>0))
-                else:
-                    #print "Error Malformed %r" % len(msg)
-                    ret = None
-            except MalformedError:
-                #print "Error2 Malformed %r" % len(msg)
-                ret = None
-        except:
-            print("Decrypt ERROR")
-            ret = None
+                    ret = "%s%s" % ( crypt_cls.decrypt(msg), " \0038<<incomplete>>" * (cut>0))
+            except ValueError:
+                pass
+        if ret is None:
+            print("Decrypt Error")
         return ret
 
     ## mark outgoing message being  prefixed with a command like /notice /msg ...
@@ -441,13 +664,10 @@ class HexFish:
 
     def encrypt(self,key, msg):
         if key.cbc_mode:
-            encrypt_clz = BlowfishCBC
-            encrypt_func = mircryption_cbc_pack
+            encrypt_cls = BlowCryptCBC
         else:
-            encrypt_clz = Blowfish
-            encrypt_func = blowcrypt_pack
-        b = encrypt_clz(key.key.encode())
-        return encrypt_func(msg, b)
+            encrypt_cls = BlowCrypt
+        return encrypt_cls(key.key.encode()).encrypt(msg)
 
     ## send message to local xchat and lock it
     def emit_print(self,userdata,speaker,message,target=None,to_context=None):
@@ -530,228 +750,6 @@ class HexFish:
             ret  = full
         return ret
 
-    ## print encrypted localy
-    def prn_crypt(self, word, word_eol, userdata):
-        id_ = self.get_id()
-        target, network = id_
-        key = self.find_key(id_)
-        if len(word_eol) < 2:
-            print("usage: /PRNCRYPT <msg to encrypt>")
-        else:
-            if key:
-                print("%s%s" % (COLOR['blue'],self.encrypt(key,word_eol[1])))
-            else:
-                print("%sNo known Key found for %s" % (COLOR['red'],target,))
-        return xchat.EAT_ALL
-
-    ## print decrypted localy
-    def prn_decrypt(self, word, word_eol, userdata):
-        id_ = self.get_id()
-        target, network = id_
-        key = self.find_key(id_)
-        if len(word_eol) < 2:
-            print("usage: /PRNDECRYPT <msg to decrypt>")
-        else:
-            if key:
-                print("%s%s" % (COLOR['blue'],self.decrypt(key,word_eol[1])))
-            else:
-                print("%sNo known Key found for %s" % (COLOR['red'],target,))
-        return xchat.EAT_ALL
-
-
-    ## manual set a key for a nick or channel
-    def set_key(self, word, word_eol, userdata):
-        id_ = self.get_id()
-        target, network = id_
-
-        ## if more than 2 parameter the nick/channel target is set to para 1 and the key is para 2
-        if len(word) > 2:
-            target = word[1]
-            if target.find("@") > 0:
-                target,network = target.split("@",1)
-            newkey = word[2]
-            id_ = (target,network)
-        ## else the current channel/nick is taken as target and the key is para 1
-        else:
-            newkey = word[1]
-        if len(newkey) < 8 or len(newkey) > 56:
-            print("Key must be between 8 and 56 chars")
-            return xchat.EAT_ALL
-        ## get the Keyobject if available or get a new one
-        key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
-        ## set the key
-        key.key = newkey
-        key.keyname = id_
-        ## put it in the key dict
-        self.__KeyMap[id_] = key
-
-        print("Key for %s on Network %s set to %r" % ( target,network,newkey))
-        ## save the key storage
-        self.save_db()
-        return xchat.EAT_ALL
-
-    ## delete a key or all
-    def del_key(self, word, word_eol, userdata):
-        ## don't accept no parameter
-        if len(word) <2:
-            print("Error: /DELKEY nick|channel|* (* deletes all keys)")
-            return xchat.EAT_ALL
-        target = word_eol[1]
-        ## if target name is * delete all
-        if target == "*":
-            self.__KeyMap = {}
-        else:
-            if target.find("@") > 0:
-                target,network = target.split("@",1)
-                id_ = target,network
-            else:
-                id_ = self.get_id(nick=target)
-                target,network = id_
-            ## try to delete the key
-            try:
-                del self.__KeyMap[id_]
-                print("Key for %s on %s deleted" % (target,network))
-            except KeyError:
-                print("Key %r not found" % (id_,))
-        ## save the keystorage
-        self.save_db()
-        return xchat.EAT_ALL
-
-    ## show either key for current chan/nick or all
-    def show_key(self, word, word_eol, userdata):
-        ## if no parameter show key for current chan/nick
-        if len(word) <2:
-            id_ = self.get_id()
-        else:
-            target = word_eol[1]
-            network = ""
-            if target.find("@") > 0:
-                target,network = target.split("@",1)
-                if network.find("*") > -1:
-                    network = network[:-1]
-            ## if para 1 is * show all keys and there states
-            if target.find("*") > -1:
-                print(" -------- nick/chan ------- -------- network ------- -ON- -CBC- -PROTECT- -------------------- Key --------------------")
-                for id_, keys in self.__KeyMap.items():
-                    if id_[0].startswith(target[:-1]) and id_[1].startswith(network):
-                        print("  %-26.26s %-22.22s  %2.2s   %3.3s   %5.5s      %s" % (id_[0],id_[1],YESNO(keys.active),YESNO(keys.cbc_mode),YESNO(keys.protect_mode),keys.key))
-
-                return xchat.EAT_ALL
-            ## else get the id for the target
-            id_ = self.get_id(nick=target)
-
-        ## get the Key
-        key = self.find_key(id_)
-        if key:
-            ## show Key for the specified chan/nick
-            print("[ %s ] Key: %s - Active: %s - CBC: %s - PROTECT: %s" % (key,key.key,YESNO(key.active),YESNO(key.cbc_mode),YESNO(key.protect_mode)))
-        else:
-            print("No Key found")
-        return xchat.EAT_ALL
-
-    ## set cbc mode or show the status
-    def set_cbc(self, word, word_eol, userdata):
-        ## check for parameter
-        mode = None
-        if len(word) >2:
-            # if both specified first is target second is mode on/off
-            target = word[1]
-            mode = word[2]
-        else:
-            ## if no target defined target is current chan/nick
-            target = None
-            if len(word) >1:
-                ## if one parameter set mode to it else show only
-                mode = word[1]
-
-        id_ = self.get_id(nick=target)
-        target,network = id_
-        ## check if there is a key
-        key = self.find_key(id_)
-        if not key:
-            print("No Key found for %r" % (target,))
-        else:
-            ## if no parameter show only status
-            if len(word) == 1:
-                print("CBC Mode is %s" % ((key.cbc_mode and "on" or "off"),))
-            else:
-                ## set cbc mode to on/off
-                key.cbc_mode = bool(mode in ONMODES)
-                print("set CBC Mode for %s to %s" % (target,(key.cbc_mode == True and "on") or "off"))
-                ## save key storage
-                self.save_db()
-        return xchat.EAT_ALL
-
-    ## set key protection mode or show the status
-    def set_protect(self, word, word_eol, userdata):
-        ## check for parameter
-        mode = None
-        if len(word) >2:
-            # if both specified first is target second is mode on/off
-            target = word[1]
-            mode = word[2]
-        else:
-            ## if no target defined target is current nick, channel is not allowed/possible yet
-            target = None
-            if len(word) >1:
-                ## if one parameter set mode to it else show only
-                mode = word[1]
-
-        id_ = self.get_id(nick=target)
-        target,network = id_
-        if "#" in target:
-            print("We don't make channel protection. Sorry!")
-            return xchat.EAT_ALL
-
-        key = self.find_key(id_)
-        ## check if there is a key
-        if not key:
-            print("No Key found for %r" % (target,))
-        else:
-            ## if no parameter show only status
-            if len(word) == 1:
-                print("KEY Protection is %s" % ((key.protect_mode and "on" or "off"),))
-            else:
-                ## set KEY Protection mode to on/off
-                key.protect_mode = bool(mode in ONMODES)
-                print("set KEY Protection for %s to %s" % (target,(key.protect_mode == True and "on") or "off"))
-                ## save key storage
-                self.save_db()
-        return xchat.EAT_ALL
-
-
-    ## activate/deaktivate encryption für chan/nick
-    def set_act(self, word, word_eol, userdata):
-        ## if two parameter first is target second is mode on/off
-        mode = None
-        if len(word) >2:
-            target = word[1]
-            mode = word[2]
-        else:
-            ## target is current chan/nick
-            target = None
-            if len(word) >1:
-                ## if one parameter set mode to on/off
-                mode = word[1]
-
-        id_ = self.get_id(nick=target)
-        target,network = id_
-        key = self.find_key(id_)
-        ## key not found
-        if not key:
-            print("No Key found for %r" % (target,))
-        else:
-            if len(word) == 1:
-                ## show only
-                print("Encryption is %s" % ((key.active and "on" or "off"),))
-            else:
-                ## set mode to on/off
-                key.active = bool(mode in ONMODES)
-                print("set Encryption for %s to %s" % (target,(key.active == True and "on") or "off"))
-                ## save key storage
-                self.save_db()
-        return xchat.EAT_ALL
-
     ## start the DH1080 Key Exchange
     def key_exchange(self, word, word_eol, userdata):
         id_ = self.get_id()
@@ -832,7 +830,7 @@ class HexFish:
         try:
             message = "%s %s" % (word[3],word[4])
         except IndexError:
-            raise MalformedError
+            raise ValueError
         dh = key.dh
         dh.receive_any()
         key.key = dh.get_secret()
