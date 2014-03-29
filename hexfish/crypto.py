@@ -34,18 +34,18 @@ except ImportError:
 def int_to_bytes(n):
     """Integer to variable length big endian."""
     if n == 0:
-        return '\x00'
+        return bytes(1)
     b = []
     while n:
-        b.insert(0,n%256)
-        n //= 256
+        b.insert(0, n&0xFF)
+        n >>= 8
     return bytes(b)
 
 def bytes_to_int(b):
     """Variable length big endian to integer."""
     n = 0
     for p in b:
-        n *= 256
+        n <<= 8
         n += p
     return n
 
@@ -78,7 +78,6 @@ def cbc_encrypt(func, data, blocksize):
 
     assert len(ciphertext) % blocksize == 0
     return ciphertext
-
 
 def cbc_decrypt(func, data, blocksize):
     """See cbc_encrypt."""
