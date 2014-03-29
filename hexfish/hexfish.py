@@ -404,23 +404,17 @@ class HexFish:
         if key.key is None or (key.active == False and not force):
             return xchat.EAT_NONE
 
-        ## if the message is marked with the plaintextmarker (default +p) don't encrypt
-        if message.startswith(self.config['PLAINTEXTMARKER']):
-            ## remove the plaintextmarker from the message
-            sendmessages = [message[len(self.config['PLAINTEXTMARKER'])+1:]]
-            messages = sendmessages
-        else:
-            ## encrypt message
-            maxlen = self.config['MAXMESSAGELENGTH']
-            cutmsg = message
-            messages = []
-            sendmessages = []
-            while len(cutmsg) >0:
-                sendmessages.append(self.encrypt(key,cutmsg[:maxlen]))
-                messages.append(cutmsg[:maxlen])
-                cutmsg = cutmsg[maxlen:]
-            ## mark the nick with ° for encrypted messages
-            nick = "%s %s" % ("°"*(1+key.cbc_mode),nick)
+        ## encrypt message
+        maxlen = self.config['MAXMESSAGELENGTH']
+        cutmsg = message
+        messages = []
+        sendmessages = []
+        while len(cutmsg) >0:
+            sendmessages.append(self.encrypt(key,cutmsg[:maxlen]))
+            messages.append(cutmsg[:maxlen])
+            cutmsg = cutmsg[maxlen:]
+        ## mark the nick with ° for encrypted messages
+        nick = "%s %s" % ("°"*(1+key.cbc_mode),nick)
 
         #print "DEBUG(outMsg2): %r %r %r %r" % (command,message,nick,target)
 
@@ -657,97 +651,6 @@ class HexFish:
             print("No Key found")
         return xchat.EAT_ALL
 
-    ## start the DH1080 Key Exchange
-    def key_exchange(self, word, word_eol, userdata):
-        id_ = self.get_id()
-        target,network = id_
-        if len(word) >1:
-            target = word[1]
-            id_ = (target,network)
-
-        ## XXX chan notice - what should happen when keyx is send to channel trillian seems to accept it and send me a key --
-        if target.startswith("#"):
-            print("Channel Exchange not implemented")
-            return xchat.EAT_ALL
-
-        ## create DH
-        dh = DH1080()
-
-        self.__KeyMap[id_] = self.find_key(id_,create=SecretKey(dh,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
-        self.__KeyMap[id_].keyname = id_
-        self.__KeyMap[id_].dh = dh
-
-        ## lock the target
-        self.__lock_proc(True)
-        ## send key with notice to target
-        xchat.command('NOTICE {} {}'.format(target, dh.send_request(self.config['DEFAULTCBC'])))
-        ## release the lock
-        self.__lock_proc(False)
-
-        ## save the key storage
-        self.save_db()
-        return xchat.EAT_ALL
-
-    ## Answer to KeyExchange
-    def dh1080_init(self, word, word_eol, userdata):
-        id_ = self.get_id(nick=self.get_nick(word[0]))
-        target,network = id_
-        message = word_eol[3]
-        key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
-
-        ## Protection against a new key if "/PROTECTKEY" is on for nick
-        if key.protect_mode:
-            print("%sKEYPROTECTION: %s on %s" % (COLOR['red'],target,network))
-            xchat.command("notice %s %s KEYPROTECTION:%s %s" % (target,self.config['PLAINTEXTMARKER'],COLOR['red'],target))
-            return xchat.EAT_ALL
-
-        ## Stealth Check
-        if self.config['FISHSTEALTH']:
-            print("%sSTEALTHMODE: %s tried a keyexchange on %s" % (COLOR['green'],target,network))
-            return xchat.EAT_ALL
-
-        dh = DH1080()
-        dh.receive_any(message[1:])
-        key.key = dh.get_secret()
-        key.keyname = id_
-
-        ## lock the target
-        self.__lock_proc(True)
-        ## send key with notice to target
-        xchat.command('NOTICE {} {}'.format(target, dh.send_response()))
-
-        ## release the lock
-        self.__lock_proc(False)
-        self.__KeyMap[id_] = key
-        print("DH1080 Init: {} on {} {}".format(target, network, 'with CBC mode' if len(word)>5 and word[5]=='CBC' else ''))
-        print("Key set to %r" % (key.key,))
-        ## save key storage
-        self.save_db()
-        return xchat.EAT_ALL
-
-    ## Answer from targets init
-    def dh1080_finish(self, word, word_eol, userdata):
-        id_ = self.get_id(nick=self.get_nick(word[0]))
-        target,network = id_
-        ## XXX if not explicit send to the Target the received key is discarded - chan exchange
-        if id_ not in self.__KeyMap:
-            print("Invalid DH1080 Received from %s on %s" % (target,network))
-            return xchat.EAT_NONE
-        key = self.__KeyMap[id_]
-        try:
-            message = "%s %s" % (word[3],word[4])
-        except IndexError:
-            raise MalformedError
-        dh = key.dh
-        dh.receive_any()
-        key.key = dh.get_secret()
-        key.keyname = id_
-        print("DH1080 Finish: {} on {} {}".format(target, network, 'with CBC mode' if len(word)>5 and word[5]=='CBC' else ''))
-        print("Key set to %r" % (key.key,))
-        ## save key storage
-        self.save_db()
-        return xchat.EAT_ALL
-
     ## set cbc mode or show the status
     def set_cbc(self, word, word_eol, userdata):
         ## check for parameter
@@ -849,6 +752,97 @@ class HexFish:
                 print("set Encryption for %s to %s" % (target,(key.active == True and "on") or "off"))
                 ## save key storage
                 self.save_db()
+        return xchat.EAT_ALL
+
+    ## start the DH1080 Key Exchange
+    def key_exchange(self, word, word_eol, userdata):
+        id_ = self.get_id()
+        target,network = id_
+        if len(word) >1:
+            target = word[1]
+            id_ = (target,network)
+
+        ## XXX chan notice - what should happen when keyx is send to channel trillian seems to accept it and send me a key --
+        if target.startswith("#"):
+            print("Channel Exchange not implemented")
+            return xchat.EAT_ALL
+
+        ## create DH
+        dh = DH1080()
+
+        self.__KeyMap[id_] = self.find_key(id_,create=SecretKey(dh,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+        self.__KeyMap[id_].keyname = id_
+        self.__KeyMap[id_].dh = dh
+
+        ## lock the target
+        self.__lock_proc(True)
+        ## send key with notice to target
+        xchat.command('NOTICE {} {}'.format(target, dh.send_request(self.config['DEFAULTCBC'])))
+        ## release the lock
+        self.__lock_proc(False)
+
+        ## save the key storage
+        self.save_db()
+        return xchat.EAT_ALL
+
+    ## Answer to KeyExchange
+    def dh1080_init(self, word, word_eol, userdata):
+        id_ = self.get_id(nick=self.get_nick(word[0]))
+        target,network = id_
+        message = word_eol[3]
+        key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+
+        ## Protection against a new key if "/PROTECTKEY" is on for nick
+        if key.protect_mode:
+            print("%sKEYPROTECTION: %s on %s" % (COLOR['red'],target,network))
+            xchat.command("notice %s %s KEYPROTECTION:%s %s" % (target,self.config['PLAINTEXTMARKER'],COLOR['red'],target))
+            return xchat.EAT_ALL
+
+        ## Stealth Check
+        if self.config['FISHSTEALTH']:
+            print("%sSTEALTHMODE: %s tried a keyexchange on %s" % (COLOR['green'],target,network))
+            return xchat.EAT_ALL
+
+        dh = DH1080()
+        dh.receive_any(message[1:])
+        key.key = dh.get_secret()
+        key.keyname = id_
+
+        ## lock the target
+        self.__lock_proc(True)
+        ## send key with notice to target
+        xchat.command('NOTICE {} {}'.format(target, dh.send_response()))
+
+        ## release the lock
+        self.__lock_proc(False)
+        self.__KeyMap[id_] = key
+        print("DH1080 Init: {} on {} {}".format(target, network, 'with CBC mode' if len(word)>5 and word[5]=='CBC' else ''))
+        print("Key set to %r" % (key.key,))
+        ## save key storage
+        self.save_db()
+        return xchat.EAT_ALL
+
+    ## Answer from targets init
+    def dh1080_finish(self, word, word_eol, userdata):
+        id_ = self.get_id(nick=self.get_nick(word[0]))
+        target,network = id_
+        ## XXX if not explicit send to the Target the received key is discarded - chan exchange
+        if id_ not in self.__KeyMap:
+            print("Invalid DH1080 Received from %s on %s" % (target,network))
+            return xchat.EAT_NONE
+        key = self.__KeyMap[id_]
+        try:
+            message = "%s %s" % (word[3],word[4])
+        except IndexError:
+            raise MalformedError
+        dh = key.dh
+        dh.receive_any()
+        key.key = dh.get_secret()
+        key.keyname = id_
+        print("DH1080 Finish: {} on {} {}".format(target, network, 'with CBC mode' if len(word)>5 and word[5]=='CBC' else ''))
+        print("Key set to %r" % (key.key,))
+        ## save key storage
+        self.save_db()
         return xchat.EAT_ALL
 
     ## handle topic server message
