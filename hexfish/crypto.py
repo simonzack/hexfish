@@ -1,9 +1,6 @@
 
 import os
 
-class MalformedError(Exception):
-    pass
-
 try:
     import Crypto.Cipher.Blowfish as blowfish
 except ImportError:
