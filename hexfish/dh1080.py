@@ -31,14 +31,12 @@ class DH1080:
         # whether we are in the middle of a handshake
         self.state = 0
         self.cbc = None
-
         g, p, q = self.g, self.p, self.q
-
         bits = 1080
         while True:
             self.private = bytes_to_int(os.urandom(bits//8))
             self.public = pow(g, self.private, p)
-            if 2 <= self.public <= p - 1 and self.validate_public_key(self.public, q, p) == 1:
+            if self.validate_public_key(self.public) and self.validate_public_key_strict(self.public):
                 break
 
     @staticmethod
