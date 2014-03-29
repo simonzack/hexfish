@@ -74,8 +74,6 @@ class HexFish:
         self.__hooks.append(xchat.hook_server('notice', self.on_notice,priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_server('332', self.server_332_topic,priority=xchat.PRI_HIGHEST))
 
-        self.__hooks.append(xchat.hook_print('Key Press',self.tab_complete))
-
         self.__hooks.append(xchat.hook_print('Notice Send',self.on_notice_send, 'Notice',priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_print('Change Nick', self.nick_trace))
         self.__hooks.append(xchat.hook_print('Channel Action', self.in_message, 'Channel Action',priority=xchat.PRI_HIGHEST))
@@ -121,20 +119,6 @@ class HexFish:
             print("/PRNCRYPT \00314encrypts messages localy")
             print("/SET [fishcrypt] \00314show/set fishcrypt settings")
             return xchat.EAT_ALL
-
-    def tab_complete(self, word, word_eol, userdata):
-        if word[0] not in ["65289","65056"]:
-            return xchat.EAT_NONE
-        input_ = xchat.get_info('inputbox')
-        if input_.upper().startswith("/HELP F"):
-            newinput = "/HELP FISHCRYPT "
-        elif input_.upper().startswith("/SET F"):
-            newinput = "/SET FISHCRYPT "
-        else:
-            return xchat.EAT_NONE
-        xchat.command("SETTEXT %s" % newinput)
-        xchat.command("SETCURSOR %d" % len(newinput))
-        return xchat.EAT_PLUGIN
 
     ## incoming notice received
     def on_notice(self, word, word_eol, userdata):
