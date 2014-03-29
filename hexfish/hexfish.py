@@ -8,9 +8,8 @@ from .compat import xchat
 from .text import add_color
 
 __module_name__ = 'hexfish'
-__module_version__ = '4.21'
+__module_version__ = '5.00b'
 __module_description__ = 'fish encryption in pure python'
-is_beta = False
 
 commands = []
 
@@ -31,7 +30,7 @@ class HexChatCommand:
 
 class HexFish:
     def __init__(self):
-        print("%sFishcrypt Version %s %s\003" % (COLOR['blue'],__module_version__,is_beta))
+        print(add_color('blue', '{} version {}{}'.format(__module_name__, __module_version__, __module_description__)))
         self.active = True
         self.__KeyMap = {}
         self.__TargetMap = {}
