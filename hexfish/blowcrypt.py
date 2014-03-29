@@ -1,6 +1,6 @@
 
 '''
-irc blowcrypt & FiSH encoding/decoding
+irc mircrypt/blowcrypt/FiSH encoding/decoding
 '''
 
 import struct
@@ -42,6 +42,17 @@ class BlowCryptBase:
             s = s[12:]
         return bytes(res)
 
+    def encrypt(self, msg):
+        raise NotImplementedError
+
+    def decrypt(self, msg):
+        raise NotImplementedError
+
+
+class BlowCrypt(BlowCryptBase):
+    def __init__(self, key=None):
+        self.blowfish = blowfish.new(key)
+
     def pack(self, msg):
         '''
         Get the irc string to send.
@@ -56,17 +67,6 @@ class BlowCryptBase:
             raise ValueError('msg')
         return self.decrypt(self.b64decode(body.encode())).strip(b'\x00').decode('utf-8', 'ignore')
 
-    def encrypt(self, msg):
-        raise NotImplementedError
-
-    def decrypt(self, msg):
-        raise NotImplementedError
-
-
-class BlowCrypt(BlowCryptBase):
-    def __init__(self, key=None):
-        self.blowfish = blowfish.new(key)
-
     def decrypt(self, data):
         return self.blowfish.decrypt(data)
 
@@ -77,6 +77,20 @@ class BlowCrypt(BlowCryptBase):
 class BlowCryptCBC(BlowCryptBase):
     def __init__(self, key=None):
         self.blowfish = blowfish.new(key)
+
+    def pack(self, msg):
+        '''
+        Get the irc string to send.
+        '''
+        return '+OK *{}'.format(self.b64encode(self.encrypt(padto(msg.encode(), 8))).decode())
+
+    def unpack(self, msg):
+        if not (msg.startswith('+OK *') or msg.startswith('mcps *')):
+            raise ValueError
+        _, body = msg.split(' *', 1)
+        if len(body) % 12 != 0:
+            raise ValueError('msg')
+        return self.decrypt(self.b64decode(body.encode())).strip(b'\x00').decode('utf-8', 'ignore')
 
     def decrypt(self, data):
         return cbc_decrypt(self.blowfish.decrypt, data, 8)
