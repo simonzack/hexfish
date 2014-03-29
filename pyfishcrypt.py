@@ -1304,7 +1304,7 @@ class XChatCrypt:
             target = word[1]
             id_ = (target,network)
 
-        ## fixme chan notice - what should happen when keyx is send to channel trillian seems to accept it and send me a key --
+        ## XXX chan notice - what should happen when keyx is send to channel trillian seems to accept it and send me a key --
         if target.startswith("#"):
             print("Channel Exchange not implemented")
             return xchat.EAT_ALL
@@ -1319,14 +1319,16 @@ class XChatCrypt:
         ## lock the target
         self.__lock_proc(True)
         ## send key with notice to target
-        xchat.command('NOTICE %s %s' % (target, dh1080_pack(dh)))
+        if self.config['DEFAULTCBC']:
+            xchat.command('NOTICE %s %s CBC' % (target, dh1080_pack(dh)))
+        else:
+            xchat.command('NOTICE %s %s' % (target, dh1080_pack(dh)))
         ## release the lock
         self.__lock_proc(False)
 
         ## save the key storage
         self.save_db()
         return xchat.EAT_ALL
-
 
     ## Answer to KeyExchange
     def dh1080_init(self, word, word_eol, userdata):
@@ -1380,14 +1382,17 @@ class XChatCrypt:
     ## Answer from targets init
     def dh1080_finish(self, word, word_eol, userdata):
         id_ = self.get_id(nick=self.get_nick(word[0]))
-        message = word_eol[3]
         target,network = id_
-        ## fixme if not explicit send to the Target the received key is discarded - chan exchange
+        ## XXX if not explicit send to the Target the received key is discarded - chan exchange
         if id_ not in self.__KeyMap:
             print("Invalid DH1080 Received from %s on %s" % (target,network))
             return xchat.EAT_NONE
         key = self.__KeyMap[id_]
-        dh1080_unpack(message[1 : ], key.dh)
+        try:
+            message = "%s %s" % (word[3],word[4])
+        except IndexError:
+            raise MalformedError
+        dh1080_unpack(message[1:], key.dh)
         key.key = dh1080_secret(key.dh)
         key.keyname = id_
         print("DH1080 Finish: %s on %s" % (target,network))
