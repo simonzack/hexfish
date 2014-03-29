@@ -1395,7 +1395,7 @@ class XChatCrypt:
         dh1080_unpack(message[1:], key.dh)
         key.key = dh1080_secret(key.dh)
         key.keyname = id_
-        print("DH1080 Finish: %s on %s" % (target,network))
+        print("DH1080 Finish: {} on {} {}".format(target, network, 'CBC mode' if len(word)>5 and word[5]=='CBC' else ''))
         print("Key set to %r" % (key.key,))
         ## save key storage
         self.save_db()
