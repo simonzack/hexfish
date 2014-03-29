@@ -120,6 +120,7 @@ class DH1080:
         if not self.validate_public_key_strict(public_key):
             print(invalid_strict_msg)
         self.secret = pow(public_key, self.private, self.p)
+        # advance stage if there are no errors
         if cmd == 'DH1080_INIT':
             self.stage = 2
         elif cmd == 'DH1080_FINISH':
