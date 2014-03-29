@@ -30,8 +30,8 @@ COLOR = {
 
 COLOR_INV = dict((val, key) for key, val in COLOR.items())
 
-def add_style(text, style):
+def add_style(style, text):
     return '{}{}{}'.format(STYLE_INV[style], text, STYLE_INV['reset'])
 
-def add_color(text, fgcolor, bgcolor=None):
-    return '{}{},{}{}{}'.format(STYLE_INV['color'], COLOR_INV[fgcolor], COLOR_INV.get(bgcolor, ''), text, STYLE_INV['reset'])
+def add_color(fgcolor, bgcolor, text):
+    return '{}{},{}{}{}'.format(STYLE_INV['color'], COLOR_INV.get(fgcolor, ''), COLOR_INV.get(bgcolor, ''), text, STYLE_INV['reset'])

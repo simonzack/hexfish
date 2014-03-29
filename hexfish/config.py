@@ -30,7 +30,7 @@ class NickInfo:
         self.config['nick_id'][self.nick] = self._id
         self.config['id_keys'][self._id] = self.key
         json_nick_res = {}
-        for key in Config.default_config['nick']['']:
+        for key in Config.default_config['nick']['*']:
             json_nick_res[key] = getattr(self, key)
         self.config['nick'][self.nick] = json_nick_res
 
@@ -40,7 +40,7 @@ class Config:
         # nick-specific settings (aliases don't matter)
         'nick': {
             # user-specified defaults
-            '': {
+            '*': {
                 'cipher': 'blowcrypt',
                 'cbc': True,
                 'cbc_force': False,
@@ -51,6 +51,7 @@ class Config:
             },
         },
         # each nick has a single alias to an id (aliases can possibly create a security problem)
+        # nick is encoded using it's host mask
         'nick_id': {},
         # each id has a single base-64 encoded key
         'id_keys': {},
@@ -95,7 +96,7 @@ class Config:
             config = self.config
             if 'nick' in config:
                 config = config['nick']
-                for nick in ('', keys[0]):
+                for nick in ('*', keys[0]):
                     if nick in config:
                         configs.append(config[''])
             configs.append(self.default_config['nick'])

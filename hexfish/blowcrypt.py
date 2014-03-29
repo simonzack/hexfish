@@ -97,3 +97,6 @@ class BlowCryptCBC(BlowCryptBase):
 
     def encrypt(self, data):
         return cbc_encrypt(self.blowfish.encrypt, data, 8)
+
+
+#XXX add a class to decide which class to use

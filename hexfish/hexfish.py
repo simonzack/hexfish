@@ -9,83 +9,67 @@ from .text import add_color
 
 __module_name__ = 'hexfish'
 __module_version__ = '5.00b'
-__module_description__ = 'fish encryption in pure python'
+__module_description__ = 'Fish encryption in pure python.'
 
-commands = []
 
-class HexChatCommand:
-    def _main(self, argv):
-        try:
-            self.main(argv)
-        except ValueError as e:
-            print(add_color('dred', 'fish error: ' + str(e)))
+class HexFishInfo:
+    @staticmethod
+    def get_version_str():
+        return '{} version {}: {}'.format(__module_name__, __module_version__, __module_description__)
 
-    def main(self, argv):
-        raise NotImplementedError
 
 class HexFishCommands:
     def __init__(self):
         self.commands = {}
         # all commands are subcommands of /fish, so that namespaces have a cleaner separation
-        self.hook = xchat.hook_command('FISH', self.main_command, help='hexfish')
-
-        self.__hooks.append(xchat.hook_command('SETKEY', self.set_key, help='set a new key for a nick or channel /SETKEY <nick>/#chan [new_key]'))
-        self.__hooks.append(xchat.hook_command('KEYX', self.key_exchange, help='exchange a new pub key, /KEYX <nick>'))
-        self.__hooks.append(xchat.hook_command('KEY', self.show_key, help='list key of a nick or channel or all (*), /KEY [nick/#chan/*]' ))
-        self.__hooks.append(xchat.hook_command('DELKEY', self.del_key, help='remove key, /DELKEY <nick>/#chan/*'))
-        self.__hooks.append(xchat.hook_command('CBCMODE', self.set_cbc, help='set or shows cbc mode for (current) channel/nick , /CBCMODE [<nick>] <0|1>'))
-        self.__hooks.append(xchat.hook_command('PROTECTKEY', self.set_protect, help='sets or shows key protection mode for (current) nick, /PROTECTKEY [<nick>] <0|1>'))
-        self.__hooks.append(xchat.hook_command('ENCRYPT', self.set_act, help='set or shows encryption on for (current) channel/nick , /ENCRYPT [<nick>] <0|1>'))
-
-        self.__hooks.append(xchat.hook_command('PRNCRYPT', self.prn_crypt, help='print msg encrpyted localy , /PRNCRYPT <msg>'))
-        self.__hooks.append(xchat.hook_command('PRNDECRYPT', self.prn_decrypt, help='print msg decrpyted localy , /PRNDECRYPT <msg>'))
-
-        ## check for password sets
-        self.__hooks.append(xchat.hook_command('SET',self.settings))
-        self.__hooks.append(xchat.hook_command('DBPASS',self.set_dbpass))
-        self.__hooks.append(xchat.hook_command('DBLOAD',self.set_dbload))
-
-        self.__hooks.append(xchat.hook_command('HELP',self.get_help))
-
-        self.__hooks.append(xchat.hook_command('', self.out_message))
-        self.__hooks.append(xchat.hook_command('ME+', self.out_message_cmd))
-        self.__hooks.append(xchat.hook_command('MSG', self.out_message_cmd))
-        self.__hooks.append(xchat.hook_command('MSG+', self.out_message_force))
-        self.__hooks.append(xchat.hook_command('NOTICE', self.out_message_cmd))
-        self.__hooks.append(xchat.hook_command('NOTICE+', self.out_message_force))
+        self.hooks = []
+        self.hooks.append(xchat.hook_command('FISH', self.main_command, help=self.get_help()))
 
     def __del__(self):
-        xchat.unhook(self.hook)
+        for hook in self.hooks:
+            xchat.unhook(hook)
 
-    def get_help(self, word, word_eol, userdata):
-        if len(word) < 2:
-            print("\n\0033 For fishcrypt.py help type /HELP FISHCRYPT")
-            return xchat.EAT_NONE
-        if word[1].upper() == "FISHCRYPT":
-            print("")
-            print("\002\0032 ****  fishcrypt.py Version: %s %s ****" % (__module_version__, is_beta))
-            print("\n")
-            print(" \002\00314***************** Fishcrypt Help ********************")
-            print(" -----------------------------------------------------")
-            print("/MSG+ \00314send crypted msg regardless of /ENCRYPT setting")
-            print("/NOTICE+ \00314send crypted notice regardless of /ENCRYPT setting")
-            print("/ME+ \00314send crypted CTCP ACTION")
-            print("/SETKEY \00314set a new key for a nick or channel")
-            print("/KEYX \00314exchange pubkey for dialog")
-            print("/KEY \00314show Keys")
-            print("/DELKEY \00314delete Keys")
-            print("/CBCMODE \00314enable/disable CBC Mode for this Key")
-            print("/ENCRYPT \00314enable/disable encryption for this Key")
-            print("/PROTECTKEY \00314enable/disable protection for keyx key exchange")
-            print("/DBPASS \00314set/change the passphrase for the Key Storage")
-            print("/DBLOAD \00314loads the Key Storage")
-            print("/PRNDECRYPT \00314decrypts messages localy")
-            print("/PRNCRYPT \00314encrypts messages localy")
-            print("/SET [fishcrypt] \00314show/set fishcrypt settings")
+    def get_help(self):
+        res = []
+        res.append(add_color('blue', None, '{: ^60}'.format(HexFishInfo.get_version_str())))
+        res.append('')
+        res.append('{: ^60}'.format(' HexFish Help '))
+        res.append('{:-^60}'.format(''))
+        for command_name, command_val in self.commands:
+            callback, userdata, help_, usage, = command_val
+            res.append('{:<20}{}').format(command_name, usage)
+        return '\n'.join(res)
+
+    def register_command(self, name, callback, userdata=None, help_=None, usage=None):
+        self.commands[name] = (callback, userdata, help_, usage)
+
+    def main_command(self, word, word_eol, userdata):
+        word = word[1:]
+        if not word or word[0] == 'help':
+            if len(word) == 1:
+                print(self.get_help())
+            else:
+                word = word[1:]
+                if word[0] not in self.commands:
+                    print('Unknown command')
+                else:
+                    callback, userdata, help_ = self.commands[word[0]]
+                    print(help_)
             return xchat.EAT_ALL
+        else:
+            try:
+                if word[0] not in self.commands:
+                    print('Unknown command')
+                else:
+                    callback, userdata, help_ = self.commands[word[0]]
+                    callback(userdata)
+            except ValueError as e:
+                print(add_color('dark_red', None, 'Fish error: ' + str(e)))
 
-    def register_command(self, name, callback, userdata=None, priority=xchat.PRI_NORM, help=None, usage=None):
-        self.commands.append()
+    @HexFishCommands.register_command('GET', help_='Get nick setting, * for all nicks', usage='/fish get [nick] [key]')
+    def get_cmd(self, userdata=None):
+        HexFish.get_id()
+
 
     ## print encrypted localy
     @HexFishCommands.register_command()
@@ -327,6 +311,13 @@ class HexFish:
         self.__hooks = []
         self.__hooks.append(xchat.hook_server('notice', self.on_notice,priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_server('332', self.server_332_topic,priority=xchat.PRI_HIGHEST))
+
+        self.__hooks.append(xchat.hook_command('', self.out_message))
+        self.__hooks.append(xchat.hook_command('ME+', self.out_message_cmd))
+        self.__hooks.append(xchat.hook_command('MSG', self.out_message_cmd))
+        self.__hooks.append(xchat.hook_command('MSG+', self.out_message_force))
+        self.__hooks.append(xchat.hook_command('NOTICE', self.out_message_cmd))
+        self.__hooks.append(xchat.hook_command('NOTICE+', self.out_message_force))
 
         self.__hooks.append(xchat.hook_print('Notice Send',self.on_notice_send, 'Notice',priority=xchat.PRI_HIGHEST))
         self.__hooks.append(xchat.hook_print('Change Nick', self.nick_trace))
@@ -714,8 +705,11 @@ class HexFish:
         id_ = "%s-%s" % (ctx.get_info('network'),target)
         return self.__lockMAP.get(id_,False)
 
-    # get an id from channel name and networkname
-    def get_id(self,nick=None):
+    @staticmethod
+    def get_id(nick=None):
+        '''
+        if nick is used, then get the user's host mask, otherwise get the current channelname@networkname
+        '''
         ctx = xchat.get_context()
         if nick:
             target = nick
