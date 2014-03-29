@@ -6,7 +6,7 @@ irc blowfish dh-1080 encoding/decoding
 import base64
 import os
 import hashlib
-from .crypto import MalformedError, int_to_bytes, bytes_to_int
+from .crypto import int_to_bytes, bytes_to_int
 
 class DH1080:
     g = 2
@@ -28,8 +28,8 @@ class DH1080:
         self.public = 0
         self.private = 0
         self.secret = 0
-        # whether we are in the middle of a handshake
-        self.state = 0
+        # 0: private key initialized, 1: sent request, 2: received request, 3: finished
+        self.stage = 0
         self.cbc = None
         g, p, q = self.g, self.p, self.q
         bits = 1080
@@ -63,9 +63,6 @@ class DH1080:
         return base64.b64decode(s)
 
     def validate_public_key(self, public_key):
-        '''
-        See RFC 2631 section 2.1.5.
-        '''
         return 1 < public_key < self.p
 
     def validate_public_key_strict(self, public_key):
@@ -94,33 +91,39 @@ class DH1080:
         key = self.b64decode(bytes_to_int(msg[1]))
         return cmd, key, cbc
 
-    def pack_request(self, cbc):
-        if self.state != 0:
-            raise ValueError('state')
+    def send_request(self, cbc):
+        if self.stage != 0:
+            raise ValueError('stage')
+        self.cbc = cbc
+        self.stage = 1
         return self.pack('DH1080_INIT', self.public, cbc)
 
-    def pack_response(self):
-        if self.state != 1:
-            raise ValueError('state')
-        return self.pack('DH1080_INIT', self.public, self.cbc)
+    def send_response(self):
+        if self.stage != 2:
+            raise ValueError('stage')
+        self.stage = 3
+        return self.pack('DH1080_FINISH', self.public, self.cbc)
 
-    def unpack_any(self, msg):
+    def receive_any(self, msg):
         cmd, cbc, public_key = self.unpack(msg)
         if cbc != self.cbc:
             raise ValueError('cbc request received a non-cbc response')
         if cmd == 'DH1080_INIT':
-            if self.state != 0:
-                raise ValueError('state')
+            if self.stage != 0:
+                raise ValueError('stage')
         elif cmd == 'DH1080_FINISH':
-            if self.state != 1:
-                raise ValueError('state')
+            if self.stage != 1:
+                raise ValueError('stage')
         if not self.validate_public_key(public_key):
             raise ValueError('invalid public key')
         invalid_strict_msg = 'Key does not conform to RFC 2631. This check is not performed by any DH1080 implementation, so we use the key anyway. See RFC 2631 & RFC 2785 for more details.'
         if not self.validate_public_key_strict(public_key):
             print(invalid_strict_msg)
         self.secret = pow(public_key, self.private, self.p)
-        self.state = 1
+        if cmd == 'DH1080_INIT':
+            self.stage = 2
+        elif cmd == 'DH1080_FINISH':
+            self.stage = 3
 
     def show_secret(self):
         if self.secret == 0:

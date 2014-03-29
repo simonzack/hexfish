@@ -17,7 +17,7 @@ import pickle
 from .crypto import MalformedError
 from .blowcrypt import Blowfish, BlowfishCBC, blowcrypt_pack, blowcrypt_unpack
 from .mircrypt import mircryption_cbc_pack, mircryption_cbc_unpack
-from .dh1080 import dh1080_pack, dh1080_unpack, dh1080_secret, DH1080Ctx
+from .dh1080 import DH1080
 
 try:
     import xchat
