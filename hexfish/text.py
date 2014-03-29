@@ -1,21 +1,37 @@
 
-COLOR = {
-	'white': '\0030',
-	'black': '\0031',
-	'blue': '\0032',
-	'red': '\0034',
-	'dred': '\0035',
-	'purple': '\0036',
-	'dyellow': '\0037',
-	'yellow': '\0038',
-	'bgreen': '\0039',
-	'dgreen': '\00310',
-	'green': '\00311',
-	'bpurple': '\00313',
-	'dgrey': '\00314',
-	'lgrey': '\00315',
-	'end': '\003'
+STYLE = {
+    '\x02': 'bold',
+    '\x03': 'color',
+    '\x0F': 'reset',
+    '\x1D': 'italic',
+    '\x1F': 'underline',
 }
 
-def add_color(color, text):
-    return COLOR[color] + text + COLOR['end']
+STYLE_INV = dict((val, key) for key, val in STYLE.items())
+
+COLOR = {
+    0: 'white',
+    1: 'black',
+    2: 'dark_blue',
+    3: 'green',
+    4: 'red',
+    5: 'brown',
+    6: 'purple',
+    7: 'orange',
+    8: 'yellow',
+    9: 'light_green',
+    10: 'teal',
+    11: 'cyan',
+    12: 'blue',
+    13: 'pink',
+    14: 'dark_gray',
+    15: 'light_gray',
+}
+
+COLOR_INV = dict((val, key) for key, val in COLOR.items())
+
+def add_style(text, style):
+    return '{}{}{}'.format(STYLE_INV[style], text, STYLE_INV['reset'])
+
+def add_color(text, fgcolor, bgcolor=None):
+    return '{}{},{}{}{}'.format(STYLE_INV['color'], COLOR_INV[fgcolor], COLOR_INV.get(bgcolor, ''), text, STYLE_INV['reset'])
