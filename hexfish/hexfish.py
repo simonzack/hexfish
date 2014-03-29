@@ -85,11 +85,6 @@ class SecretKey(object):
     def __repr__(self):
         return "%s" % self.key
 
-def destroy_object(_):
-    global load_obj
-    del load_obj
-    return False
-
 class XChatCrypt:
     def __init__(self):
         print("%sFishcrypt Version %s %s\003" % (COLOR['blue'],__module_version__,ISBETA))
@@ -157,10 +152,10 @@ class XChatCrypt:
     def __destroy(self, userdata):
         for hook in self.__hooks:
             xchat.unhook(hook)
-        destroy_object(None)
+        del self
 
     def __del__(self):
-        print("\00311fishcrypt.py successful unloaded")
+        print("\00311fishcrypt.py successfully unloaded")
 
     def get_help(self, word, word_eol, userdata):
         if len(word) < 2:
