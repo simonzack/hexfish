@@ -16,23 +16,13 @@ import base64
 import hashlib
 import struct
 import time
+import pickle
 
 try:
     import xchat
 except ImportError:
     xchat = None
-    sys.exit("should be run from xchat plugin with python enabled")
-
-import pickle
-
-## append current path
-import inspect
-scriptname = inspect.currentframe().f_code.co_filename
-if scriptname!='<script>':
-    path, script = os.path.split(scriptname)
-    sys.path.insert(1, path)
-else:
-    path = ''
+    sys.exit('XChat not active.')
 
 try:
     import Crypto.Cipher.Blowfish as cBlowfish
