@@ -6,7 +6,7 @@ irc blowcrypt & FiSH encoding/decoding
 import struct
 from .crypto import cbc_encrypt, cbc_decrypt, blowfish, padto
 
-class BlowfishBase:
+class BlowCryptBase:
     @staticmethod
     def b64encode(s):
         '''
@@ -63,7 +63,7 @@ class BlowfishBase:
         raise NotImplementedError
 
 
-class Blowfish(BlowfishBase):
+class BlowCrypt(BlowCryptBase):
     def __init__(self, key=None):
         self.blowfish = blowfish.new(key)
 
@@ -74,7 +74,7 @@ class Blowfish(BlowfishBase):
         return self.blowfish.encrypt(data)
 
 
-class BlowfishCBC(BlowfishBase):
+class BlowCryptCBC(BlowCryptBase):
     def __init__(self, key=None):
         self.blowfish = blowfish.new(key)
 
