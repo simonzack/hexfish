@@ -3,7 +3,6 @@
 
 import time
 from .blowcrypt import BlowCrypt, BlowCryptCBC
-from .mircrypt import MirCrypt, MirCryptCBC
 from .dh1080 import DH1080
 from .compat import xchat
 from .text import add_color
