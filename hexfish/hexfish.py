@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__module_name__ = 'fishcrypt'
+__module_name__ = 'hexfish'
 __module_version__ = '4.21'
 __module_description__ = 'fish encryption in pure python'
 
