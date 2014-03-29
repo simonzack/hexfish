@@ -12,7 +12,6 @@ YESNO = lambda x: (x==0 and "N") or "Y"
 
 import sys
 import os
-import re
 import base64
 import hashlib
 import struct
@@ -105,7 +104,6 @@ class XChatCrypt:
             'DEFAULTCBC' : True,
             'DEFAULTPROTECT' : False,
             'MAXMESSAGELENGTH' : 300,
-            'FISHBETAVERSION': True,
             'FISHDEVELOPDEBUG': False,
             'AUTOBACKUP': True,
             'FISHSTEALTH': False,
