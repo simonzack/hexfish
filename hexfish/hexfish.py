@@ -27,7 +27,7 @@ class HexFishCommands:
     def __init__(self):
         self.commands = {}
         # all commands are subcommands of /fish, so that namespaces have a cleaner separation
-        xchat.hook_command('FISH', self.main_command, help='hexfish')
+        self.hook = xchat.hook_command('FISH', self.main_command, help='hexfish')
 
         self.__hooks.append(xchat.hook_command('SETKEY', self.set_key, help='set a new key for a nick or channel /SETKEY <nick>/#chan [new_key]'))
         self.__hooks.append(xchat.hook_command('KEYX', self.key_exchange, help='exchange a new pub key, /KEYX <nick>'))
@@ -53,6 +53,9 @@ class HexFishCommands:
         self.__hooks.append(xchat.hook_command('MSG+', self.out_message_force))
         self.__hooks.append(xchat.hook_command('NOTICE', self.out_message_cmd))
         self.__hooks.append(xchat.hook_command('NOTICE+', self.out_message_force))
+
+    def __del__(self):
+        xchat.unhook(self.hook)
 
     def get_help(self, word, word_eol, userdata):
         if len(word) < 2:
