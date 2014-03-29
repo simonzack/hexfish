@@ -126,7 +126,7 @@ class DH1080:
         elif cmd == 'DH1080_FINISH':
             self.stage = 3
 
-    def show_secret(self):
+    def get_secret(self):
         if self.secret == 0:
             raise ValueError
         return self.b64encode(hashlib.sha256(int_to_bytes(self.secret)).digest())

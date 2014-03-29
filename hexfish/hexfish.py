@@ -906,7 +906,7 @@ class XChatCrypt:
             return xchat.EAT_ALL
 
         ## create DH
-        dh = DH1080Ctx()
+        dh = DH1080()
 
         self.__KeyMap[id_] = self.find_key(id_,create=SecretKey(dh,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
         self.__KeyMap[id_].keyname = id_
@@ -915,10 +915,7 @@ class XChatCrypt:
         ## lock the target
         self.__lock_proc(True)
         ## send key with notice to target
-        if self.config['DEFAULTCBC']:
-            xchat.command('NOTICE %s %s CBC' % (target, dh1080_pack(dh)))
-        else:
-            xchat.command('NOTICE %s %s' % (target, dh1080_pack(dh)))
+        xchat.command('NOTICE {} {}'.format(target, dh.send_request(self.config['DEFAULTCBC'])))
         ## release the lock
         self.__lock_proc(False)
 
@@ -943,28 +940,15 @@ class XChatCrypt:
             print("%sSTEALTHMODE: %s tried a keyexchange on %s" % (COLOR['green'],target,network))
             return xchat.EAT_ALL
 
-        mirc_mode = False
-        try:
-            if word[5] == "CBC":
-                print("mIRC CBC KeyExchange detected.")
-                message = "%s %s" % (word[3],word[4])
-                mirc_mode = True
-        except IndexError:
-            pass
-
-        dh = DH1080Ctx()
-        dh1080_unpack(message[1 : ], dh)
-        key.key = dh1080_secret(dh)
+        dh = DH1080()
+        dh.receive_any(message[1:])
+        key.key = dh.get_secret()
         key.keyname = id_
 
         ## lock the target
         self.__lock_proc(True)
         ## send key with notice to target
-        #print "SEND PUBKEY: %r" % dh.public
-        if mirc_mode:
-            xchat.command('NOTICE %s %s CBC' % (target, dh1080_pack(dh)))
-        else:
-            xchat.command('NOTICE %s %s' % (target, dh1080_pack(dh)))
+        xchat.command('NOTICE {} {}'.format(target, dh.send_response()))
 
         ## release the lock
         self.__lock_proc(False)
@@ -988,8 +972,9 @@ class XChatCrypt:
             message = "%s %s" % (word[3],word[4])
         except IndexError:
             raise MalformedError
-        dh1080_unpack(message[1:], key.dh)
-        key.key = dh1080_secret(key.dh)
+        dh = key.dh
+        dh.receive_any()
+        key.key = dh.get_secret()
         key.keyname = id_
         print("DH1080 Finish: {} on {} {}".format(target, network, 'with CBC mode' if len(word)>5 and word[5]=='CBC' else ''))
         print("Key set to %r" % (key.key,))
