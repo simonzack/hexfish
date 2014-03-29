@@ -1,81 +1,44 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-__module_name__ = 'hexfish'
-__module_version__ = '4.21'
-__module_description__ = 'fish encryption in pure python'
-
-ISBETA = ""
-
-ONMODES = ["Y","y","j","J","1","yes","on","ON","Yes","True","true"]
-YESNO = lambda x: (x==0 and "N") or "Y"
-
-import sys
-import os
 import time
-import pickle
 from .crypto import MalformedError
 from .blowcrypt import Blowfish, BlowfishCBC, blowcrypt_pack, blowcrypt_unpack
 from .mircrypt import mircryption_cbc_pack, mircryption_cbc_unpack
 from .dh1080 import DH1080
+from .compat import xchat
+from .text import add_color
 
-try:
-    import xchat
-except ImportError:
-    xchat = None
-    print('XChat not active.')
-    sys.exit(1)
+__module_name__ = 'hexfish'
+__module_version__ = '4.21'
+__module_description__ = 'fish encryption in pure python'
+is_beta = False
 
-COLOR = {
-	'white': '\0030',
-	'black': '\0031',
-	'blue': '\0032',
-	'red': '\0034',
-	'dred': '\0035',
-	'purple': '\0036',
-	'dyellow': '\0037',
-	'yellow': '\0038',
-	'bgreen': '\0039',
-	'dgreen': '\00310',
-	'green': '\00311',
-	'bpurple': '\00313',
-	'dgrey': '\00314',
-	'lgrey': '\00315',
-	'close': '\003'
-}
+commands = []
 
-class SecretKey(object):
-    def __init__(self, dh, key=None,protectmode=False,cbcmode=False):
-        self.dh = dh
-        self.key = key
-        self.cbc_mode = cbcmode
-        self.protect_mode = protectmode
-        self.active = True
-        self.cipher = 0
-        self.keyname = (None,None)
+def register_command(cls):
+    cls.name
 
-    def __str__(self):
-        return "%s@%s" % self.keyname
 
-    def __repr__(self):
-        return "%s" % self.key
+class HexChatCommand:
+    def _main(self, argv):
+        try:
+            self.main(argv)
+        except ValueError as e:
+            print(add_color('dred', 'fish error: ' + str(e)))
 
-class XChatCrypt:
+    def main(self, argv):
+        raise NotImplementedError
+
+
+class HexFish:
     def __init__(self):
-        print("%sFishcrypt Version %s %s\003" % (COLOR['blue'],__module_version__,ISBETA))
+        print("%sFishcrypt Version %s %s\003" % (COLOR['blue'],__module_version__,is_beta))
         self.active = True
         self.__KeyMap = {}
         self.__TargetMap = {}
         self.__lockMAP = {}
-        self.config = {
-            'PLAINTEXTMARKER' : '+p',
-            'DEFAULTCBC' : True,
-            'DEFAULTPROTECT' : False,
-            'MAXMESSAGELENGTH' : 300,
-            'FISHDEVELOPDEBUG': False,
-            'AUTOBACKUP': True,
-            'FISHSTEALTH': False,
-        }
+
         self.status = {
             'CHKPW': None,
             'DBPASSWD' : None,
@@ -138,7 +101,7 @@ class XChatCrypt:
             return xchat.EAT_NONE
         if word[1].upper() == "FISHCRYPT":
             print("")
-            print("\002\0032 ****  fishcrypt.py Version: %s %s ****" % (__module_version__, ISBETA))
+            print("\002\0032 ****  fishcrypt.py Version: %s %s ****" % (__module_version__, is_beta))
             print("\n")
             print(" \002\00314***************** Fishcrypt Help ********************")
             print(" -----------------------------------------------------")
@@ -172,187 +135,6 @@ class XChatCrypt:
         xchat.command("SETTEXT %s" % newinput)
         xchat.command("SETCURSOR %d" % len(newinput))
         return xchat.EAT_PLUGIN
-
-    ## Load key storage
-    def load_db(self):
-        db = None
-        with open(os.path.join(xchat.get_info('configdir'), 'fish3.pickle'),'rb') as hnd:
-            data = hnd.read()
-            ## set DB loaded to False as we have a file we don't want to create a new
-            self.status['LOADED'] = False
-        if data:
-            try:
-                db = pickle.loads(data)
-                print("%sUnencrypted Key Storage loaded" % (COLOR['bpurple'],))
-            except pickle.UnpicklingError:
-                ## ignore if file is invalid
-                data = data.decode('utf-8', 'ignore')
-                if data.startswith("+OK *"):
-                    self.status['CRYPTDB'] = True
-                    if self.status['DBPASSWD']:
-                        try:
-                            algo = BlowfishCBC(self.status['DBPASSWD'])
-                            decrypted = mircryption_cbc_unpack(data,algo).encode()
-                            db = pickle.loads(decrypted)
-                            print("%sEncrypted Key Storage loaded" % (COLOR['green'],))
-                        except pickle.UnpicklingError:
-                            self.status['DBPASSWD'] = None
-                            print("%sKey Storage can't be loaded with this password" % (COLOR['dred'],))
-                            print("use /DBLOAD to load it later")
-                    else:
-                        xchat.command('GETSTR ""  "SET fishcrypt_passload" "Enter your Key Storage Password"')
-                pass
-        if type(db) == dict:
-            self.status['LOADED'] = True
-            ## save temp keymap
-            old_key_map = self.__KeyMap
-            old_target_map = self.__TargetMap
-            ## fill dict with the loaded Keymap
-            self.__KeyMap = db.get("KeyMap",{})
-            self.__TargetMap = db.get("TargetMap",{})
-            self.__KeyMap.update(old_key_map)
-            self.__TargetMap.update(old_target_map)
-            for key in self.__KeyMap.keys():
-                self.__KeyMap[key].keyname = key
-                if not hasattr(self.__KeyMap[key],'protect_mode'):
-                    self.__KeyMap[key].protect_mode = False
-            self.clean_up_target_map()
-
-            ## only import valid config values
-            for key in self.config.keys():
-                try:
-                    self.config[key] = db["Config"][key]
-                except KeyError:
-                    pass
-            if self.config['FISHDEVELOPDEBUG']:
-                self.__hooks.append(xchat.hook_command('FISHEVAL',self.__evaldebug))
-
-    def clean_up_target_map(self):
-        ## DB Cleanup
-        for network in self.__TargetMap.values():
-            for target,value in list(network.items()):
-                if type(value[1]) != SecretKey or value[0] < time.time() - 60*60*24*7 or value[1] not in self.__KeyMap.values():
-                    del network[target]
-                    print("Expired: %r %r" % (target,value))
-
-
-    ## save keys to storage
-    def save_db(self):
-        self.clean_up_target_map()
-        if not self.status['LOADED']:
-            print("Key Storage not loaded, no save. use /DBLOAD to load it")
-            return
-        with open(os.path.join(xchat.get_info('configdir'), 'fish3.pickle'),'wb') as hnd:
-            data = pickle.dumps({
-                'KeyMap': self.__KeyMap,
-                'TargetMap': self.__TargetMap,
-                'Config': self.config,
-                'Version': __module_version__
-            })
-            if self.status['DBPASSWD']:
-                algo = BlowfishCBC(self.status['DBPASSWD'])
-                encrypted = mircryption_cbc_pack(data.decode('utf-8', 'ignore'), algo).encode()
-                data = encrypted
-                self.status['CRYPTDB'] = True
-            else:
-                self.status['CRYPTDB'] = False
-            hnd.write(data)
-
-    def __evaldebug(self, word, word_eol, userdata):
-        eval(compile(word_eol[1],'develeval','exec'))
-        return xchat.EAT_ALL
-
-    def set_dbload(self, word, word_eol, userdata):
-        self.load_db()
-        return xchat.EAT_ALL
-
-    def set_dbpass(self, word, word_eol, userdata):
-        xchat.command('GETSTR "" "SET fishcrypt_passpre" "New Password"')
-        return xchat.EAT_ALL
-
-    ## set keydb passwd
-    def settings(self, word, word_eol, userdata):
-        fishonly = False
-        if len(word) == 2:
-            if word[1].upper() == "FISHCRYPT":
-                fishonly = True
-        if len(word) < 2 or fishonly:
-            ## not for us
-            #print "fishcrypt_pass%s%s%s: \003%r" % (COLOR['blue'],"."*16,COLOR['green'],self.status['DBPASSWD'])
-            for key in self.config:
-                keyname = "%s%s" % (key,"."*20)
-                print("\00312%.29s: %s" % (keyname,str(self.config[key])))
-            if fishonly:
-                return xchat.EAT_ALL
-            return xchat.EAT_NONE
-
-
-        if word[1] == "fishcrypt_passpre":
-            if len(word) == 2:
-                self.status['CHKPW'] = ""
-            else:
-                self.status['CHKPW'] = word_eol[2]
-            xchat.command('GETSTR ""  "SET fishcrypt_pass" "Repeat the Password"')
-            return xchat.EAT_ALL
-
-        if word[1] == "fishcrypt_pass":
-            if len(word) == 2:
-                if self.status['CHKPW'] != "" and self.status['CHKPW'] is not None:
-                    print("Passwords don't match")
-                    self.status['CHKPW'] = None
-                    return xchat.EAT_ALL
-                self.status['DBPASSWD'] = None
-                print("%sPassword removed and Key Storage decrypted" % (COLOR['dred'],))
-                print("%sWarning Keys are plaintext" % (COLOR['dred'],))
-            else:
-                if self.status['CHKPW'] is not None and self.status['CHKPW'] != word_eol[2]:
-                    print("Passwords don't match")
-                    self.status['CHKPW'] = None
-                    return xchat.EAT_ALL
-                if len(word_eol[2]) < 8 or len(word_eol[2]) > 56:
-                    print("Passwords must be between 8 and 56 chars")
-                    self.status['CHKPW'] = None
-                    return xchat.EAT_ALL
-                self.status['DBPASSWD'] = word_eol[2]
-                ## don't show the pw on console if set per GETSTR
-                if self.status['CHKPW'] is None:
-                    print("%sPassword for Key Storage encryption set to %r" % (COLOR['dred'],self.status['DBPASSWD']))
-                else:
-                    print("%sKey Storage encrypted" % (COLOR['dred']))
-            self.status['CHKPW'] = None
-            self.save_db()
-            return xchat.EAT_ALL
-
-        if word[1] == "fishcrypt_passload":
-            if len(word) > 2:
-                if len(word_eol[2]) < 8 or len(word_eol[2]) > 56:
-                    print("Password not between 8 and 56 chars")
-                else:
-                    self.status['DBPASSWD'] = word_eol[2]
-                    self.load_db()
-            else:
-                print("Key Storage Not loaded")
-                self.status['DBPASSWD'] = None
-            return xchat.EAT_ALL
-
-        key = word[1].upper()
-        if key in self.config.keys():
-            if len(word) <3:
-                keyname = "%s%s" % (key,"."*20)
-                print("\00312%.29s: %s" % (keyname,str(self.config[key])))
-            else:
-                try:
-                    if type(self.config[key]) == bool:
-                        self.config[key] = bool(word[2] in ONMODES)
-                    else:
-                        self.config[key] = type(self.config[key])(word_eol[2])
-                    print("\0035Set %r to %r" % (key,word_eol[2]))
-                    self.save_db()
-                except ValueError:
-                    print("\0034Invalid Config Value %r for %s" % (word_eol[2],key))
-            return xchat.EAT_ALL
-
-        return xchat.EAT_NONE
 
     ## incoming notice received
     def on_notice(self, word, word_eol, userdata):
@@ -929,6 +711,7 @@ class XChatCrypt:
         target,network = id_
         message = word_eol[3]
         key = self.find_key(id_,create=SecretKey(None,protectmode=self.config['DEFAULTPROTECT'],cbcmode=self.config['DEFAULTCBC']))
+
         ## Protection against a new key if "/PROTECTKEY" is on for nick
         if key.protect_mode:
             print("%sKEYPROTECTION: %s on %s" % (COLOR['red'],target,network))
@@ -1137,4 +920,4 @@ class XChatCrypt:
         return xchat.EAT_NONE
 
 
-load_obj = XChatCrypt()
+load_obj = HexFish()
