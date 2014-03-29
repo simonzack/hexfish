@@ -47,11 +47,6 @@ except ImportError:
             xored.append(a[i] ^ b[i])
         return bytes(xored)
 
-from threading import Thread
-
-import socket
-REALSOCKET = socket.socket
-
 def makedict(**kwargs):
     return kwargs
 
