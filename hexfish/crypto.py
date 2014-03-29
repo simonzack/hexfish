@@ -29,7 +29,9 @@ except ImportError:
         return bytes(xored)
 
 def int_to_bytes(n):
-    """Integer to variable length big endian."""
+    '''
+    Convert an integer to bytes stored in big-endian format.
+    '''
     if n == 0:
         return bytes(1)
     b = []
@@ -39,7 +41,9 @@ def int_to_bytes(n):
     return bytes(b)
 
 def bytes_to_int(b):
-    """Variable length big endian to integer."""
+    '''
+    Convert an bytes stored in big-endian format to an integer.
+    '''
     n = 0
     for p in b:
         n <<= 8
@@ -47,8 +51,10 @@ def bytes_to_int(b):
     return n
 
 def padto(msg, length):
-    """Pads 'msg' with zeroes until it's length is divisible by 'length'.
-    If the length of msg is already a multiple of 'length', does nothing."""
+    '''
+    Pads msg with 0s until it's length is divisible by 'length'.
+    Does nothing if this is already true.
+    '''
     l = len(msg)
     if l % length:
         msg += bytes(length - l % length)
@@ -56,9 +62,15 @@ def padto(msg, length):
     return msg
 
 def cbc_encrypt(func, data, blocksize):
-    """The CBC mode. The randomy generated IV is prefixed to the ciphertext.
-    'func' is a function that encrypts data in ECB mode. 'data' is the
-    plaintext. 'blocksize' is the block size of the cipher."""
+    '''
+    Uses func to encrypt data in CBC mode using a randomely generate IV.
+    The IV is prefixed to the ciphertext.
+
+    args:
+        func:       a function that encrypts data in ECB mode
+        data:       plaintext
+        blocksize:  block size of the cipher
+    '''
     assert len(data) % blocksize == 0
 
     iv = os.urandom(blocksize)
@@ -77,7 +89,6 @@ def cbc_encrypt(func, data, blocksize):
     return ciphertext
 
 def cbc_decrypt(func, data, blocksize):
-    """See cbc_encrypt."""
     assert len(data) % blocksize == 0
 
     iv = data[0:blocksize]
