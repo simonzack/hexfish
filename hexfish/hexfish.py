@@ -1519,7 +1519,6 @@ def dh1080_pack(ctx):
     return "%s %s" % (cmd,dh1080_b64encode(int2bytes(ctx.public)))
 
 def dh1080_unpack(msg, ctx):
-    """."""
     if not msg.startswith("DH1080_"):
         raise ValueError
 
@@ -1567,7 +1566,6 @@ def dh1080_unpack(msg, ctx):
 
 
 def dh1080_secret(ctx):
-    """."""
     if ctx.secret == 0:
         raise ValueError
     return dh1080_b64encode(sha256(int2bytes(ctx.secret)))
