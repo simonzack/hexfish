@@ -5,7 +5,7 @@ irc blowfish dh-1080 encoding/decoding
 
 import os
 import hashlib
-from .crypto import MalformedError, int2bytes, bytes2int
+from .crypto import MalformedError, int_to_bytes, bytes_to_int
 
 g_dh1080 = 2
 p_dh1080 = int('FBE1022E23D213E8ACFA9AE8B9DFAD'
@@ -129,7 +129,7 @@ class DH1080Ctx:
 
         bits = 1080
         while True:
-            self.private = bytes2int(os.urandom(bits//8))
+            self.private = bytes_to_int(os.urandom(bits//8))
             self.public = pow(g_dh1080, self.private, p_dh1080)
             if 2 <= self.public <= p_dh1080 - 1 and \
                dh_validate_public(self.public, q_dh1080, p_dh1080) == 1:
@@ -144,7 +144,7 @@ def dh1080_pack(ctx):
         cmd = "DH1080_INIT"
     else:
         cmd = "DH1080_FINISH"
-    return "%s %s" % (cmd,dh1080_b64encode(int2bytes(ctx.public)))
+    return "%s %s" % (cmd,dh1080_b64encode(int_to_bytes(ctx.public)))
 
 def dh1080_unpack(msg, ctx):
     if not msg.startswith("DH1080_"):
@@ -158,7 +158,7 @@ def dh1080_unpack(msg, ctx):
         ctx.state = 1
         try:
             cmd, public_raw = msg.split(' ', 1)
-            public = bytes2int(dh1080_b64decode(public_raw))
+            public = bytes_to_int(dh1080_b64decode(public_raw))
 
             if not 1 < public < p_dh1080:
                 raise MalformedError
@@ -177,7 +177,7 @@ def dh1080_unpack(msg, ctx):
         ctx.state = 1
         try:
             cmd, public_raw = msg.split(' ', 1)
-            public = bytes2int(dh1080_b64decode(public_raw))
+            public = bytes_to_int(dh1080_b64decode(public_raw))
 
             if not 1 < public < p_dh1080:
                 raise MalformedError
@@ -196,4 +196,4 @@ def dh1080_unpack(msg, ctx):
 def dh1080_secret(ctx):
     if ctx.secret == 0:
         raise ValueError
-    return dh1080_b64encode(hashlib.sha256(int2bytes(ctx.secret)).digest())
+    return dh1080_b64encode(hashlib.sha256(int_to_bytes(ctx.secret)).digest())

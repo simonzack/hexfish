@@ -31,7 +31,7 @@ except ImportError:
             xored.append(ac ^ bc)
         return bytes(xored)
 
-def int2bytes(n):
+def int_to_bytes(n):
     """Integer to variable length big endian."""
     if n == 0:
         return '\x00'
@@ -41,7 +41,7 @@ def int2bytes(n):
         n //= 256
     return bytes(b)
 
-def bytes2int(b):
+def bytes_to_int(b):
     """Variable length big endian to integer."""
     n = 0
     for p in b:
