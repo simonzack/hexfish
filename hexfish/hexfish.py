@@ -2,9 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import time
-from .crypto import MalformedError
-from .blowcrypt import Blowfish, BlowfishCBC, blowcrypt_pack, blowcrypt_unpack
-from .mircrypt import mircryption_cbc_pack, mircryption_cbc_unpack
+from .blowcrypt import BlowCrypt, BlowCryptCBC
+from .mircrypt import MirCrypt, MirCryptCBC
 from .dh1080 import DH1080
 from .compat import xchat
 from .text import add_color
