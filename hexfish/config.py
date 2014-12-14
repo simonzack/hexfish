@@ -1,10 +1,12 @@
 
 import base64
-import os
 import json
+import os
 import uuid
-from .compat import xchat
-from .crypto import blowfish
+
+import xchat
+from Crypto.Cipher import Blowfish
+
 
 class NickInfo:
     def __init__(self, nick, config):
@@ -34,9 +36,10 @@ class NickInfo:
             json_nick_res[key] = getattr(self, key)
         self.config['nick'][self.nick] = json_nick_res
 
+
 class Config:
     default_config = {
-        'max_message_length' : 300,
+        'max_message_length': 300,
         # nick-specific settings (aliases don't matter)
         'nick': {
             # user-specified defaults
@@ -69,7 +72,7 @@ class Config:
             container = json.load(fp)
             if container['encrypted']:
                 contents = container['contents']
-                bf = blowfish.new(password.encode())
+                bf = Blowfish.new(password.encode())
                 contents = json.loads(bf.decrypt(base64.b64decode(contents.encode())).decode())
             else:
                 contents = container
@@ -79,9 +82,9 @@ class Config:
         contents = self.config
         encrypted = password is None
         if encrypted:
-            if not 8<=len(password)<=56:
-                raise ValueError('8<=len(password)<=56')
-            bf = blowfish.new(password.encode())
+            if not 8 <= len(password) <= 56:
+                raise ValueError('8 <= len(password) <= 56')
+            bf = Blowfish.new(password.encode())
             contents = base64.b64decode(bf.encrypt(json.dumps(contents).encode())).decode()
         container = {
             'encrypted': encrypted,
@@ -91,7 +94,7 @@ class Config:
             json.dump(container, fp)
 
     def get(self, keys):
-        if keys[0] == 'nick' and len(keys)>=2:
+        if keys[0] == 'nick' and len(keys) >= 2:
             configs = []
             config = self.config
             if 'nick' in config:

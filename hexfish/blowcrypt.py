@@ -4,7 +4,11 @@ irc mircrypt/blowcrypt/FiSH encoding/decoding
 '''
 
 import struct
-from .crypto import cbc_encrypt, cbc_decrypt, blowfish, padto
+
+from Crypto.Cipher import Blowfish
+
+from .crypto import cbc_decrypt, cbc_encrypt, padto
+
 
 class BlowCryptBase:
     @staticmethod
@@ -12,15 +16,15 @@ class BlowCryptBase:
         '''
         Non-standard base64-encode.
         '''
-        b64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        b64 = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         res = bytearray()
         while s:
             left, right = struct.unpack('>LL', s[:8])
             for i in range(6):
-                res.append( b64[right & 0x3f] )
+                res.append(b64[right & 0x3f])
                 right >>= 6
             for i in range(6):
-                res.append( b64[left & 0x3f] )
+                res.append(b64[left & 0x3f])
                 left >>= 6
             s = s[8:]
         return bytes(res)
@@ -30,7 +34,7 @@ class BlowCryptBase:
         '''
         Non-standard base64-encode.
         '''
-        b64 = b"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        b64 = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         res = bytearray()
         while s:
             left, right = 0, 0
@@ -38,7 +42,7 @@ class BlowCryptBase:
                 right |= b64.index(p) << (i * 6)
             for i, p in enumerate(s[6:12]):
                 left |= b64.index(p) << (i * 6)
-            res.extend( struct.pack('>LL', left, right) )
+            res.extend(struct.pack('>LL', left, right))
             s = s[12:]
         return bytes(res)
 
@@ -51,7 +55,7 @@ class BlowCryptBase:
 
 class BlowCrypt(BlowCryptBase):
     def __init__(self, key=None):
-        self.blowfish = blowfish.new(key)
+        self.blowfish = Blowfish.new(key)
 
     def pack(self, msg):
         '''
@@ -76,7 +80,7 @@ class BlowCrypt(BlowCryptBase):
 
 class BlowCryptCBC(BlowCryptBase):
     def __init__(self, key=None):
-        self.blowfish = blowfish.new(key)
+        self.blowfish = Blowfish.new(key)
 
     def pack(self, msg):
         '''
@@ -99,4 +103,4 @@ class BlowCryptCBC(BlowCryptBase):
         return cbc_encrypt(self.blowfish.encrypt, data, 8)
 
 
-#XXX add a class to decide which class to use
+# XXX add a class to decide which class to use

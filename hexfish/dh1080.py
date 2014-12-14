@@ -4,9 +4,12 @@ irc blowfish dh-1080 encoding/decoding
 '''
 
 import base64
-import os
 import hashlib
-from .crypto import int_to_bytes, bytes_to_int
+import os
+import textwrap
+
+from .crypto import bytes_to_int, int_to_bytes
+
 
 class DH1080:
     g = 2
@@ -56,10 +59,10 @@ class DH1080:
         utf-7 base64 encode without padding characters, padding instead with 0 bits
         '''
         # remove trailing 'A' if it's just for padding
-        if len(s)%4==1:
+        if len(s) % 4 == 1:
             s = s[:-1]
         # add padding characters
-        s += b'='*((-len(s))%4)
+        s += b'='*((-len(s)) % 4)
         return base64.b64decode(s)
 
     def validate_public_key(self, public_key):
@@ -116,7 +119,10 @@ class DH1080:
                 raise ValueError('stage')
         if not self.validate_public_key(public_key):
             raise ValueError('invalid public key')
-        invalid_strict_msg = 'Key does not conform to RFC 2631. This check is not performed by any DH1080 implementation, so we use the key anyway. See RFC 2631 & RFC 2785 for more details.'
+        invalid_strict_msg = textwrap.dedent('''
+            Key does not conform to RFC 2631. This check is not performed by any DH1080 implementation, so we use the
+            key anyway. See RFC 2631 & RFC 2785 for more details.
+        ''')
         if not self.validate_public_key_strict(public_key):
             print(invalid_strict_msg)
         self.secret = pow(public_key, self.private, self.p)
@@ -130,4 +136,3 @@ class DH1080:
         if self.secret == 0:
             raise ValueError
         return self.b64encode(hashlib.sha256(int_to_bytes(self.secret)).digest())
-

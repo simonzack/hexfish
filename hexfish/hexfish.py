@@ -1,10 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 
 import time
+
+import xchat
+
 from .blowcrypt import BlowCrypt, BlowCryptCBC
 from .dh1080 import DH1080
-from .compat import xchat
 from .text import add_color
 
 __module_name__ = 'hexfish'
@@ -30,11 +30,11 @@ class HexFishCommands:
             xchat.unhook(hook)
 
     def get_help(self):
-        res = []
-        res.append(add_color('blue', None, '{: ^60}'.format(HexFishInfo.get_version_str())))
-        res.append('')
-        res.append('{: ^60}'.format(' HexFish Help '))
-        res.append('{:-^60}'.format(''))
+        res = [
+            add_color('blue', None, '{: ^60}'.format(HexFishInfo.get_version_str())), '',
+            '{: ^60}'.format(' HexFish Help '),
+            '{:-^60}'.format('')
+        ]
         for command_name, command_val in self.commands:
             callback, userdata, help_, usage, = command_val
             res.append('{:<20}{}').format(command_name, usage)
@@ -261,7 +261,7 @@ class HexFishCommands:
                 self.save_db()
         return xchat.EAT_ALL
 
-    ## activate/deaktivate encryption für chan/nick
+    ## activate/deaktivate encryption fÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼r chan/nick
     def set_act(self, word, word_eol, userdata):
         ## if two parameter first is target second is mode on/off
         mode = None
@@ -386,12 +386,12 @@ class HexFish:
                 try:
                     message = sndmessage
                     ## mark nick for encrypted msgg
-                    speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
+                    speaker = "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+is_cbc),speaker)
                 except UnicodeError:
                     try:
                         message = str(sndmessage,encoding='iso8859-1',errors='ignore').encode('UTF8')
                         ## mark nick for encrypted msgg
-                        speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
+                        speaker = "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+is_cbc),speaker)
                     except:
                         raise
                     ## send the message to local xchat
@@ -452,7 +452,7 @@ class HexFish:
                 try:
                     message = sndmessage
                     ## mark nick for encrypted msgg
-                    speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
+                    speaker = "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+is_cbc),speaker)
                 except:
                     ## mark nick with a question mark
                     speaker = "?%s" % speaker
@@ -510,12 +510,12 @@ class HexFish:
                 try:
                     message = sndmessage
                     ## mark nick for encrypted msgg
-                    speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
+                    speaker = "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+is_cbc),speaker)
                 except UnicodeError:
                     try:
                         message = str(sndmessage,encoding='iso8859-1',errors='ignore').encode('UTF8')
                         ## mark nick for encrypted msgg
-                        speaker = "%s %s" % ("°"*(1+is_cbc),speaker)
+                        speaker = "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+is_cbc),speaker)
                     except:
                         raise
                     ## send the message to local xchat
@@ -628,8 +628,8 @@ class HexFish:
             sendmessages.append(self.encrypt(key,cutmsg[:maxlen]))
             messages.append(cutmsg[:maxlen])
             cutmsg = cutmsg[maxlen:]
-        ## mark the nick with ° for encrypted messages
-        nick = "%s %s" % ("°"*(1+key.cbc_mode),nick)
+        ## mark the nick with ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â° for encrypted messages
+        nick = "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+key.cbc_mode),nick)
 
         #print "DEBUG(outMsg2): %r %r %r %r" % (command,message,nick,target)
 
@@ -651,7 +651,7 @@ class HexFish:
                 else:
                     target_tab= xchat.find_context(channel=target)
                     if not target_tab and target_tab != xchat.get_context():
-                        self.emit_print('Message Send',  "%s %s" % ("°"*(1+key.cbc_mode),target), message)
+                        self.emit_print('Message Send',  "%s %s" % ("ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â°"*(1+key.cbc_mode),target), message)
                     else:
                         self.emit_print('Your Message',  nick, message, to_context=target_tab)
         return xchat.EAT_ALL

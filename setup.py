@@ -1,12 +1,12 @@
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
-	name='hexfish',
-	description='Hexchat Fish',
+    name='hexfish',
+    description='Hexchat Fish',
 
-	author='simonzack',
-	author_email='simonzack@gmail.com',
+    author='simonzack',
+    author_email='simonzack@gmail.com',
 
-	packages=find_packages(),
+    packages=find_packages()
 )
