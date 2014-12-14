@@ -42,7 +42,7 @@ def padto(msg, length):
 
 def cbc_encrypt(func, data, blocksize):
     '''
-    Uses func to encrypt data in CBC mode using a randomely generate IV.
+    Uses func to encrypt data in CBC mode using a randomly generated IV.
     The IV is prefixed to the ciphertext.
 
     args:
