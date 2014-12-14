@@ -35,5 +35,12 @@ def add_style(style, text):
     return '{}{}{}'.format(STYLE_INV[style], text, STYLE_INV['reset'])
 
 
-def add_color(fgcolor, bgcolor, text):
-    return '{}{},{}{}{}'.format(STYLE_INV['color'], COLOR_INV.get(fgcolor, ''), COLOR_INV.get(bgcolor, ''), text, STYLE_INV['reset'])
+def add_color(color, text):
+    res = STYLE_INV['color']
+    if isinstance(color, str):
+        res += '{}'.format(COLOR_INV.get(color, ''))
+    else:
+        res += '{},{}'.format(COLOR_INV.get(color[0]), COLOR_INV.get(color[1]))
+    res += text
+    res += STYLE_INV['reset']
+    return res
