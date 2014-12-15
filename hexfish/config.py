@@ -73,17 +73,20 @@ class Config:
             json.dump(container, fp, indent=4)
 
     def get(self, keys):
+        is_default = False
         if keys[0] == 'nick' and len(keys) >= 2:
             if keys[1] not in self.config.get('nick', {}):
                 keys = ('nick', str(uuid.UUID(int=0))) + keys[2:]
+                is_default = True
         for config in (self.config, self.default_config):
             for key in keys:
                 if key in config:
                     config = config[key]
                 else:
+                    is_default = True
                     break
             else:
-                return config
+                return config, is_default
         raise KeyError
 
     def set(self, keys, value):
