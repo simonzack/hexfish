@@ -87,8 +87,7 @@ class Config:
         raise KeyError
 
     def set(self, keys, value):
-        if self.get(keys) == value:
-            return
+        # always set even if values are the same, so changes in default won't break the config
         type_keys = keys
         if keys[0] == 'nick' and len(keys) >= 2:
             type_keys = ('nick', str(uuid.UUID(int=0))) + keys[2:]

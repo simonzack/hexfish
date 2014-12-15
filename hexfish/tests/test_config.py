@@ -17,10 +17,6 @@ class TestConfig(unittest.TestCase):
 
     def test_set(self):
         config = Config()
-        config.set(('nick', config.create_id(), 'cipher'), 'blowcrypt')
-        self.assertEqual(config.config, {})
-
-        config = Config()
         id_ = config.create_id()
-        config.set(('nick', id_, 'cipher'), 'some_other_cipher')
-        self.assertEqual(config.config, {'nick': {id_: {'cipher': 'some_other_cipher'}}})
+        config.set(('nick', id_, 'cipher'), 'blowcrypt')
+        self.assertEqual(config.config, {'nick': {id_: {'cipher': 'blowcrypt'}}})
