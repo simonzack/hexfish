@@ -8,7 +8,7 @@ import hashlib
 import os
 import textwrap
 
-from .crypto import bytes_to_int, int_to_bytes
+from hexfish.crypto import bytes_to_int, int_to_bytes
 
 
 class DH1080:
@@ -45,20 +45,18 @@ class DH1080:
     @staticmethod
     def b64encode(s):
         '''
-        utf-7 base64 encode without padding characters, padding instead with 0 bits
+        Non-standard base64 encode, without padding characters and encodes at least one additional zero bit.
         '''
         res = base64.b64encode(s)
-        if b'=' in res:
-            return res.rstrip(b'=')
+        if res.endswith(b'='):
+            res = res.rstrip(b'=')
         else:
-            return res + b'='
+            res += b'A'
+        return res
 
     @staticmethod
     def b64decode(s):
-        '''
-        utf-7 base64 encode without padding characters, padding instead with 0 bits
-        '''
-        # remove trailing 'A' if it's just for padding
+        # remove padding A
         if len(s) % 4 == 1:
             s = s[:-1]
         # add padding characters
