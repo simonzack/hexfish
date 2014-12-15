@@ -28,16 +28,11 @@ def bytes_to_int(b):
     return n
 
 
-def padto(msg, length):
+def pad_to(msg, multiple):
     '''
-    Pads msg with 0s until it's length is divisible by 'length'.
-    Does nothing if this is already true.
+    Pads msg with 0s until it's length is divisible by `multiple`.
     '''
-    l = len(msg)
-    if l % length:
-        msg += bytes(length - l % length)
-    assert len(msg) % length == 0
-    return msg
+    return msg + bytes((len(msg) - multiple - 1)//multiple*multiple)
 
 
 def cbc_encrypt(func, data, blocksize):
