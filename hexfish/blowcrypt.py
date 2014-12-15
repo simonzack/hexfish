@@ -1,20 +1,20 @@
 
 '''
-irc mircrypt/blowcrypt/FiSH encoding/decoding
+mircrypt/blowcrypt/FiSH encryption
 '''
 
 import struct
 
 from Crypto.Cipher import Blowfish
 
-from .crypto import cbc_decrypt, cbc_encrypt, padto
+from .crypto import cbc_decrypt, cbc_encrypt, pad_to
 
 
 class BlowCryptBase:
     @staticmethod
     def b64encode(s):
         '''
-        Non-standard base64-encode.
+        Non-standard base64 with various bit & endian reversals.
         '''
         b64 = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         res = bytearray()
@@ -31,9 +31,6 @@ class BlowCryptBase:
 
     @staticmethod
     def b64decode(s):
-        '''
-        Non-standard base64-encode.
-        '''
         b64 = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         res = bytearray()
         while s:
@@ -61,7 +58,7 @@ class BlowCrypt(BlowCryptBase):
         '''
         Get the irc string to send.
         '''
-        return '+OK {}'.format(self.b64encode(self.encrypt(padto(msg.encode(), 8))).decode())
+        return '+OK {}'.format(self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
 
     def unpack(self, msg):
         if not (msg.startswith('+OK ') or msg.startswith('mcps ')):
@@ -71,11 +68,11 @@ class BlowCrypt(BlowCryptBase):
             raise ValueError('msg')
         return self.decrypt(self.b64decode(body.encode())).strip(b'\x00').decode('utf-8', 'ignore')
 
-    def decrypt(self, data):
-        return self.blowfish.decrypt(data)
-
     def encrypt(self, data):
         return self.blowfish.encrypt(data)
+
+    def decrypt(self, data):
+        return self.blowfish.decrypt(data)
 
 
 class BlowCryptCBC(BlowCryptBase):
@@ -86,7 +83,7 @@ class BlowCryptCBC(BlowCryptBase):
         '''
         Get the irc string to send.
         '''
-        return '+OK *{}'.format(self.b64encode(self.encrypt(padto(msg.encode(), 8))).decode())
+        return '+OK *{}'.format(self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
 
     def unpack(self, msg):
         if not (msg.startswith('+OK *') or msg.startswith('mcps *')):
@@ -96,11 +93,11 @@ class BlowCryptCBC(BlowCryptBase):
             raise ValueError('msg')
         return self.decrypt(self.b64decode(body.encode())).strip(b'\x00').decode('utf-8', 'ignore')
 
-    def decrypt(self, data):
-        return cbc_decrypt(self.blowfish.decrypt, data, 8)
-
     def encrypt(self, data):
         return cbc_encrypt(self.blowfish.encrypt, data, 8)
+
+    def decrypt(self, data):
+        return cbc_decrypt(self.blowfish.decrypt, data, 8)
 
 
 # XXX add a class to decide which class to use
