@@ -32,7 +32,7 @@ class Config:
         },
         # each nick has a single alias to an id (aliases can possibly create a security problem)
         # nick is encoded using it's host mask
-        'nick_id': {'*default': str(uuid.UUID(int=0))},
+        'nick_id': {'*default@': str(uuid.UUID(int=0))},
         # each id has a single base-64 encoded key
         'id_keys': {},
     }
