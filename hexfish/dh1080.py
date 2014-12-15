@@ -10,6 +10,8 @@ import textwrap
 
 from hexfish.crypto import bytes_to_int, int_to_bytes
 
+__all__ = ['DH1080']
+
 
 class DH1080:
     g = 2

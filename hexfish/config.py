@@ -9,6 +9,8 @@ from collections import OrderedDict
 import xchat
 from Crypto.Cipher import Blowfish
 
+__all__ = ['Config']
+
 
 class Config:
     default_config = {

@@ -9,6 +9,8 @@ from Crypto.Cipher import Blowfish
 
 from .crypto import cbc_decrypt, cbc_encrypt, pad_to
 
+__all__ = ['BlowCrypt', 'BlowCryptCBC']
+
 
 class BlowCryptBase:
     @staticmethod

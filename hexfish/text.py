@@ -1,4 +1,6 @@
 
+__all__ = ['add_style', 'add_color']
+
 STYLE = {
     '\x02': 'bold',
     '\x03': 'color',
