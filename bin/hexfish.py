@@ -1,2 +1,2 @@
 
-from hexfish import *
+from hexfish.plugin import *
