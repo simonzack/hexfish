@@ -34,7 +34,7 @@ def pad_to(msg, multiple):
     '''
     Pads msg with 0s until it's length is divisible by `multiple`.
     '''
-    return msg + bytes((len(msg) - multiple - 1)//multiple*multiple)
+    return msg + bytes(-len(msg) % multiple)
 
 
 def cbc_encrypt(func, data, blocksize):
