@@ -34,7 +34,7 @@ class Config:
         # nick is encoded using it's host mask
         'nick_id': {'*default@': str(uuid.UUID(int=0))},
         # each id has a single base-64 encoded key
-        'id_keys': {},
+        'id_key': {},
     }
 
     def __init__(self, config=None, password=None):
