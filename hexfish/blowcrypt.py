@@ -9,7 +9,7 @@ from Crypto.Cipher import Blowfish
 
 from .crypto import cbc_decrypt, cbc_encrypt, pad_to
 
-__all__ = ['BlowCrypt', 'BlowCryptCBC']
+__all__ = ['BlowCrypt', 'BlowCryptCBC', 'is_cbc']
 
 
 class BlowCryptBase:
@@ -100,3 +100,7 @@ class BlowCryptCBC(BlowCryptBase):
 
     def decrypt(self, data):
         return cbc_decrypt(self.blowfish.decrypt, data, 8)
+
+
+def is_cbc(msg):
+    return msg.startswith('+OK *')
