@@ -15,8 +15,12 @@ __all__ = ['Config']
 class Config:
     default_config = {
         'max_message_length': 300,
-        # nick-specific settings (aliases don't matter)
-        'nick': {
+        # each nick (nick@network) has a single alias to an id (aliases can possibly create a security problem)
+        'nick_id': {'*default@': str(uuid.UUID(int=0))},
+        # maps id to base64-encoded keys
+        'id_key': {},
+        # maps id to key config
+        'id_config': {
             # user-specified defaults
             # ordered dict to pretty-print
             str(uuid.UUID(int=0)): OrderedDict([
@@ -29,12 +33,7 @@ class Config:
                 # do not respond to key exchanges
                 ('stealth', False),
             ]),
-        },
-        # each nick has a single alias to an id (aliases can possibly create a security problem)
-        # nick is encoded using it's host mask
-        'nick_id': {'*default@': str(uuid.UUID(int=0))},
-        # each id has a single base-64 encoded key
-        'id_key': {},
+        }
     }
 
     def __init__(self, config=None, password=None):
@@ -77,8 +76,8 @@ class Config:
 
     def find_deepest(self, keys, allow_default=True):
         keys_search = [keys]
-        if allow_default and len(keys) >= 2 and keys[0] == 'nick':
-            keys_search.append(('nick', str(uuid.UUID(int=0))) + keys[2:])
+        if allow_default and len(keys) >= 2 and keys[0] == 'id_config':
+            keys_search.append(('id_config', str(uuid.UUID(int=0))) + keys[2:])
         config_search = [self.config]
         if allow_default:
             config_search.append(self.default_config)
