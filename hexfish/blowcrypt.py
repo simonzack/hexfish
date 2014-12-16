@@ -100,6 +100,3 @@ class BlowCryptCBC(BlowCryptBase):
 
     def decrypt(self, data):
         return cbc_decrypt(self.blowfish.decrypt, data, 8)
-
-
-# XXX add a class to decide which class to use
