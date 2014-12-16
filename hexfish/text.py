@@ -34,15 +34,15 @@ COLOR_INV = dict((val, key) for key, val in COLOR.items())
 
 
 def add_style(style, text):
-    return '{}{}{}'.format(STYLE_INV[style], text, STYLE_INV['reset'])
+    return '{}\u200b{}{}'.format(STYLE_INV[style], text, STYLE_INV['reset'])
 
 
 def add_color(color, text):
     res = STYLE_INV['color']
     if isinstance(color, str):
-        res += '{}'.format(COLOR_INV.get(color, ''))
+        res += '{}\u200b'.format(COLOR_INV.get(color, ''))
     else:
-        res += '{},{}'.format(COLOR_INV.get(color[0]), COLOR_INV.get(color[1]))
+        res += '{},{}\u200b'.format(COLOR_INV.get(color[0]), COLOR_INV.get(color[1]))
     res += text
     res += STYLE_INV['reset']
     return res
