@@ -114,7 +114,6 @@ class Config:
 
     def __setitem__(self, keys, value):
         # always set even if values are the same, so changes in default won't break the config
-        self.__getitem__(keys)
         config = self.config
         for key in keys[:-1]:
             config = config.setdefault(key, {})

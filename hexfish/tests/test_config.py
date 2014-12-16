@@ -29,8 +29,6 @@ class TestConfig(unittest.TestCase):
         id_ = config.create_id()
         config['nick', id_, 'cipher'] = 'blowcrypt'
         self.assertEqual(config.config, {'nick': {id_: {'cipher': 'blowcrypt'}}})
-        with self.assertRaises(KeyError):
-            config['nick', config.create_id(), 'long_key', 'long_key'] = 'value'
 
     def test_del(self):
         config = Config()
