@@ -54,13 +54,11 @@ class Config:
             return res
         with open(cls.get_config_path(), 'r') as fp:
             container = json.load(fp)
+            contents = container['contents']
             if container['encrypted']:
-                contents = container['contents']
                 bf = Blowfish.new(password.encode())
                 contents = json.loads(bf.decrypt(base64.b64decode(contents.encode())).decode())
-            else:
-                contents = container
-            return cls(container, password)
+            return cls(contents, password)
 
     def dump(self, password=None):
         path = self.get_config_path()
