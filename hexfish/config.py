@@ -29,7 +29,7 @@ class Config:
                 ('cbc_force', False),
                 ('active', True),
                 # protect against exchanging new keys
-                ('protect_key', False),
+                ('protect', False),
                 # do not respond to key exchanges
                 ('stealth', False),
             ]),
