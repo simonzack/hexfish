@@ -7,43 +7,65 @@ import struct
 
 from Crypto.Cipher import Blowfish
 
-from .crypto import cbc_decrypt, cbc_encrypt, pad_to
+from hexfish.crypto import cbc_decrypt, cbc_encrypt, pad_to
 
-__all__ = ['BlowCrypt', 'BlowCryptCBC', 'is_cbc']
+__all__ = ['BlowCrypt', 'BlowCryptCBC', 'find_msg_cls']
 
 
 class BlowCryptBase:
-    @staticmethod
-    def b64encode(s):
+    send_prefix = ''
+    receive_prefixes = []
+    b64_alphabet = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    @classmethod
+    def b64encode(cls, s):
         '''
         Non-standard base64 with various bit & endian reversals.
         '''
-        b64 = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         res = bytearray()
-        while s:
-            left, right = struct.unpack('>LL', s[:8])
-            for i in range(6):
-                res.append(b64[right & 0x3f])
+        if len(s) % 8 != 0:
+            raise ValueError
+        for i in range(0, len(s), 8):
+            left, right = struct.unpack('>LL', s[i:i+8])
+            for j in range(6):
+                res.append(cls.b64_alphabet[right & 0x3f])
                 right >>= 6
-            for i in range(6):
-                res.append(b64[left & 0x3f])
+            for j in range(6):
+                res.append(cls.b64_alphabet[left & 0x3f])
                 left >>= 6
-            s = s[8:]
         return bytes(res)
 
-    @staticmethod
-    def b64decode(s):
-        b64 = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    @classmethod
+    def b64decode(cls, s, partial=False):
         res = bytearray()
-        while s:
-            left, right = 0, 0
-            for i, p in enumerate(s[0:6]):
-                right |= b64.index(p) << (i * 6)
-            for i, p in enumerate(s[6:12]):
-                left |= b64.index(p) << (i * 6)
-            res.extend(struct.pack('>LL', left, right))
-            s = s[12:]
+        if not partial and len(s) % 12 != 0:
+            raise ValueError
+        try:
+            for i in range(0, len(s)//12*12, 12):
+                left, right = 0, 0
+                for j, p in enumerate(s[i:i+6]):
+                    right |= cls.b64_alphabet.index(p) << (j * 6)
+                for j, p in enumerate(s[i+6:i+12]):
+                    left |= cls.b64_alphabet.index(p) << (j * 6)
+                res.extend(struct.pack('>LL', left, right))
+        except ValueError:
+            if not partial:
+                raise
         return bytes(res)
+
+    def pack(self, msg):
+        '''
+        Get the irc string to send.
+        '''
+        return '{}{}'.format(self.send_prefix, self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
+
+    def unpack(self, msg, partial=False):
+        try:
+            prefix = next(prefix for prefix in self.receive_prefixes if msg.startswith(prefix))
+        except StopIteration:
+            raise ValueError
+        body = msg[len(prefix):]
+        return self.decrypt(self.b64decode(body.encode(), partial)).strip(b'\x00').decode('utf-8', 'ignore')
 
     def encrypt(self, msg):
         raise NotImplementedError
@@ -53,22 +75,11 @@ class BlowCryptBase:
 
 
 class BlowCrypt(BlowCryptBase):
+    send_prefix = '+OK '
+    receive_prefixes = ['+OK ', 'mcps ']
+
     def __init__(self, key=None):
         self.blowfish = Blowfish.new(key)
-
-    def pack(self, msg):
-        '''
-        Get the irc string to send.
-        '''
-        return '+OK {}'.format(self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
-
-    def unpack(self, msg):
-        if not (msg.startswith('+OK ') or msg.startswith('mcps ')):
-            raise ValueError
-        _, body = msg.split(' ', 1)
-        if len(body) % 12 != 0:
-            raise ValueError('msg')
-        return self.decrypt(self.b64decode(body.encode())).strip(b'\x00').decode('utf-8', 'ignore')
 
     def encrypt(self, data):
         return self.blowfish.encrypt(data)
@@ -78,22 +89,11 @@ class BlowCrypt(BlowCryptBase):
 
 
 class BlowCryptCBC(BlowCryptBase):
+    send_prefix = '+OK *'
+    receive_prefixes = ['+OK *', 'mcps *']
+
     def __init__(self, key=None):
         self.blowfish = Blowfish.new(key)
-
-    def pack(self, msg):
-        '''
-        Get the irc string to send.
-        '''
-        return '+OK *{}'.format(self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
-
-    def unpack(self, msg):
-        if not (msg.startswith('+OK *') or msg.startswith('mcps *')):
-            raise ValueError
-        _, body = msg.split(' *', 1)
-        if len(body) % 12 != 0:
-            raise ValueError('msg')
-        return self.decrypt(self.b64decode(body.encode())).strip(b'\x00').decode('utf-8', 'ignore')
 
     def encrypt(self, data):
         return cbc_encrypt(self.blowfish.encrypt, data, 8)
@@ -102,5 +102,9 @@ class BlowCryptCBC(BlowCryptBase):
         return cbc_decrypt(self.blowfish.decrypt, data, 8)
 
 
-def is_cbc(msg):
-    return msg.startswith('+OK *')
+def find_msg_cls(msg):
+    # BlowCryptCBC has precedence since it's prefixes contain the prefixes of BlowCrypt
+    for cls in (BlowCryptCBC, BlowCrypt):
+        if any(msg.startswith(prefix) for prefix in cls.receive_prefixes):
+            return cls
+    raise ValueError('msg')
