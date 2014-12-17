@@ -25,8 +25,11 @@ class Config:
             # ordered dict to pretty-print
             str(uuid.UUID(int=0)): OrderedDict([
                 ('cipher', 'blowcrypt'),
+                # cbc is on for sent messages
                 ('cbc', True),
+                # cbc is on for sent messages even if not specified by the key exchange
                 ('cbc_force', False),
+                # encryption is on for sent messages
                 ('active', True),
                 # protect against exchanging new keys
                 ('protect', False),
