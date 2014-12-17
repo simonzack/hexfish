@@ -2,7 +2,7 @@
 import unittest
 import uuid
 
-from hexfish.config import Config
+from hexfish.config import *
 
 
 # noinspection PyStatementEffect
