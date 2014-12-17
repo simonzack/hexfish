@@ -74,13 +74,15 @@ class DH1080:
         '''
         return pow(public_key, self.q, self.p) == 1
 
-    def pack(self, cmd, key, cbc):
-        res = '{} {}'.format(cmd, self.b64encode(int_to_bytes(key)))
+    @classmethod
+    def pack(cls, cmd, key, cbc):
+        res = '{} {}'.format(cmd, cls.b64encode(int_to_bytes(key)))
         if cbc:
             res += ' CBC'
         return res
 
-    def unpack(self, msg):
+    @classmethod
+    def unpack(cls, msg):
         words = msg.split()
         if len(words) not in (2, 3):
             raise ValueError('msg')
@@ -91,7 +93,7 @@ class DH1080:
         cmd = words[0]
         if cmd not in ('DH1080_INIT', 'DH1080_FINISH'):
             raise ValueError('msg')
-        key = self.b64decode(bytes_to_int(msg[1]))
+        key = cls.b64decode(bytes_to_int(msg[1]))
         return cmd, key, cbc
 
     def send_request(self, cbc):
