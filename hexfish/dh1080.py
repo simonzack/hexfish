@@ -76,7 +76,7 @@ class DH1080:
 
     @classmethod
     def pack(cls, cmd, key, cbc):
-        res = '{} {}'.format(cmd, cls.b64encode(int_to_bytes(key)))
+        res = '{} {}'.format(cmd, cls.b64encode(int_to_bytes(key)).decode())
         if cbc:
             res += ' CBC'
         return res
@@ -93,7 +93,7 @@ class DH1080:
         cmd = words[0]
         if cmd not in ('DH1080_INIT', 'DH1080_FINISH'):
             raise ValueError('msg')
-        key = cls.b64decode(bytes_to_int(msg[1]))
+        key = bytes_to_int(cls.b64decode(words[1].encode()))
         return cmd, key, cbc
 
     def send_request(self, cbc):
@@ -110,21 +110,22 @@ class DH1080:
         return self.pack('DH1080_FINISH', self.public, self.cbc)
 
     def receive_any(self, msg):
-        cmd, cbc, public_key = self.unpack(msg)
-        if cbc != self.cbc:
-            raise ValueError('cbc request received a non-cbc response')
+        cmd, public_key, cbc = self.unpack(msg)
         if cmd == 'DH1080_INIT':
             if self.stage != 0:
                 raise ValueError('stage')
+            self.cbc = cbc
         elif cmd == 'DH1080_FINISH':
             if self.stage != 1:
                 raise ValueError('stage')
+            if cbc != self.cbc:
+                raise ValueError('cbc request received a non-cbc response')
         if not self.validate_public_key(public_key):
             raise ValueError('invalid public key')
         invalid_strict_msg = textwrap.dedent('''
             Key does not conform to RFC 2631. This check is not performed by any DH1080 implementation, so we use the
             key anyway. See RFC 2631 & RFC 2785 for more details.
-        ''')
+        ''').strip().replace('\n', ' ')
         if not self.validate_public_key_strict(public_key):
             print(invalid_strict_msg)
         self.secret = pow(public_key, self.private, self.p)
