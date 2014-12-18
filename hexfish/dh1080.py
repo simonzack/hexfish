@@ -122,12 +122,8 @@ class DH1080:
                 raise ValueError('cbc request received a non-cbc response')
         if not self.validate_public_key(public_key):
             raise ValueError('invalid public key')
-        invalid_strict_msg = textwrap.dedent('''
-            Key does not conform to RFC 2631. This check is not performed by any DH1080 implementation, so we use the
-            key anyway. See RFC 2631 & RFC 2785 for more details.
-        ''').strip().replace('\n', ' ')
         if not self.validate_public_key_strict(public_key):
-            print(invalid_strict_msg)
+            print('Warning: key does not conform to RFC 2631.')
         self.secret = pow(public_key, self.private, self.p)
         # advance stage if there are no errors
         if cmd == 'DH1080_INIT':
