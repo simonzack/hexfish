@@ -17,6 +17,11 @@ class BlowCryptBase:
     receive_prefixes = []
     b64_alphabet = b'./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
+    def __init__(self, key=None):
+        if not 8 <= len(key) <= 56:
+            raise ValueError('8 <= len(key) <= 56')
+        self.blowfish = Blowfish.new(key)
+
     @classmethod
     def b64encode(cls, s):
         '''
@@ -78,9 +83,6 @@ class BlowCrypt(BlowCryptBase):
     send_prefix = '+OK '
     receive_prefixes = ['+OK ', 'mcps ']
 
-    def __init__(self, key=None):
-        self.blowfish = Blowfish.new(key)
-
     def encrypt(self, data):
         return self.blowfish.encrypt(data)
 
@@ -91,9 +93,6 @@ class BlowCrypt(BlowCryptBase):
 class BlowCryptCBC(BlowCryptBase):
     send_prefix = '+OK *'
     receive_prefixes = ['+OK *', 'mcps *']
-
-    def __init__(self, key=None):
-        self.blowfish = Blowfish.new(key)
 
     def encrypt(self, data):
         return cbc_encrypt(self.blowfish.encrypt, data, 8)

@@ -66,8 +66,6 @@ class Config:
         path = self.get_config_path()
         contents = self.config
         if password:
-            if not 8 <= len(password) <= 56:
-                raise ValueError('8 <= len(password) <= 56')
             bf = Blowfish.new(password.encode())
             contents = base64.b64decode(bf.encrypt(json.dumps(contents).encode())).decode()
         container = {
