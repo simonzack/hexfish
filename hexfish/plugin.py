@@ -106,7 +106,7 @@ class HexFishCommands:
             nicks.insert(0, '*default@')
         yield from (nick for nick in nicks if re.match(matcher, nick))
 
-    @arg_parser.register_command(('show_key', {'help': 'Show nick key & config, wildcards allowed.'}), [
+    @arg_parser.register_command(('showkey', {'help': 'Show nick key & config, wildcards allowed.'}), [
         ('nick', {'nargs': '?', 'default': ''})
     ])
     def show_key(self, args):
@@ -126,7 +126,7 @@ class HexFishCommands:
             table.append(row)
         print(tabulate(table, headers='firstrow'))
 
-    @arg_parser.register_command(('set_key', {'help': 'Sets a key, wildcards not allowed.'}), [
+    @arg_parser.register_command(('setkey', {'help': 'Sets a key, wildcards not allowed.'}), [
         ('nick', {'nargs': '?', 'default': ''}), ('key', {}),
     ])
     def set_key(self, args):
@@ -143,7 +143,7 @@ class HexFishCommands:
         config.dump()
         print('key for {} set to {}'.format(format_nick(nick), key))
 
-    @arg_parser.register_command(('del_key', {'help': 'Delete nick key, wildcards allowed.'}), [
+    @arg_parser.register_command(('delkey', {'help': 'Delete nick key, wildcards allowed.'}), [
         ('nick', {'nargs': '?', 'default': ''})
     ])
     def del_key(self, args):
@@ -155,7 +155,7 @@ class HexFishCommands:
         config.dump()
         print('key for {} deleted'.format(format_nick(*nicks)))
 
-    @arg_parser.register_command(('config', {'help': 'Configures a key, wildcards allowed.'}), [
+    @arg_parser.register_command(('setconfig', {'help': 'Configures a key, wildcards allowed.'}), [
         ('nick', {'nargs': '?', 'default': ''}), ('key', {}), ('value', {})
     ])
     def config_key(self, args):
