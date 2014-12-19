@@ -14,7 +14,6 @@ __all__ = ['Config']
 
 class Config:
     default_config = {
-        'max_message_length': 300,
         # each nick (nick@network) has a single alias to an id (aliases can possibly create a security problem)
         'nick_id': {'*default@': str(uuid.UUID(int=0))},
         # maps id to base64-encoded keys
