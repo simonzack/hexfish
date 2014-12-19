@@ -118,7 +118,8 @@ class DH1080:
             if self.stage != 1:
                 raise ValueError('stage')
             if cbc != self.cbc:
-                raise ValueError('cbc request received a non-cbc response')
+                print('Warning: cbc request received a non-cbc response')
+                self.cbc = False
         if not self.validate_public_key(public_key):
             raise ValueError('invalid public key')
         if not self.validate_public_key_strict(public_key):
