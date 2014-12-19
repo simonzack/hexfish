@@ -2,6 +2,9 @@
 
 HexFish is a FiSH/MirCryption-compatible python 3 encryption plugin for xchat/hexchat written in 100% pure python.
 
+## Usage
+Type `/fish -h` in any irc window.
+
 ## Features
 
 - Cipher-block chaining (CBC) key exchange setting & encryption.
