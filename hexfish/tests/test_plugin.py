@@ -1,5 +1,4 @@
 
-import base64
 import builtins  # noinspection PyUnresolvedReferences
 import io
 import os
@@ -21,8 +20,8 @@ class TestHexFishCommands(unittest.TestCase):
                 'nick2@network2': str(uuid.UUID(int=2))
             },
             'id_key': {
-                str(uuid.UUID(int=1)): base64.b64encode(b'1'*8),
-                str(uuid.UUID(int=2)): base64.b64encode(b'2'*8),
+                str(uuid.UUID(int=1)): '1'*8,
+                str(uuid.UUID(int=2)): '2'*8,
             },
             'id_config': {
                 str(uuid.UUID(int=1)): {'cbc': True}
@@ -59,10 +58,10 @@ class TestHexFishCommands(unittest.TestCase):
         print_.side_effect = lambda x: sr.write(x)
         hexfish_commands.show_key(SimpleNamespace(nick='nick*@network*'))
         self.assertEqual(sr.getvalue(), textwrap.dedent('''
-            nick            cipher      cbc    cbc force    active    protect key    stealth    key
-            --------------  ----------  -----  -----------  --------  -------------  ---------  ------------
-            nick1@network1  blowcrypt*  True   False*       True*     False*         False*     MTExMTExMTE=
-            nick2@network2  blowcrypt*  True*  False*       True*     False*         False*     MjIyMjIyMjI=
+            nick            cipher      cbc    cbc force    active    protect    stealth         key
+            --------------  ----------  -----  -----------  --------  ---------  ---------  --------
+            nick1@network1  blowcrypt*  True   False*       True*     False*     False*     11111111
+            nick2@network2  blowcrypt*  True*  False*       True*     False*     False*     22222222
         ''').strip())
 
     @mock.patch('builtins.print')
@@ -109,7 +108,7 @@ class TestHexFishCommands(unittest.TestCase):
             print_.side_effect = lambda x: sr.write(x)
             config['id_config', config['nick_id', 'nick1@network1'], 'cbc'] = False
             hexfish_commands.encrypt(SimpleNamespace(nick='nick1@network1', unparsed='some text'))
-            self.assertEqual(sr.getvalue(), '+OK o8Ohb/ew2rg/lcLsU/OUv8Q0')
+            self.assertEqual(sr.getvalue(), '+OK 7M7bZ.8IFOz/mzvAm/ZvN7X0')
 
     @mock.patch('builtins.print')
     def test_encrypt_cbc(self, print_):
@@ -119,14 +118,14 @@ class TestHexFishCommands(unittest.TestCase):
             print_.side_effect = lambda x: sr.write(x)
             config['id_config', config['nick_id', 'nick1@network1'], 'cbc'] = True
             hexfish_commands.encrypt(SimpleNamespace(nick='nick1@network1', unparsed='some text'))
-            self.assertEqual(sr.getvalue(), '+OK *K.1aK.K.1aK.dcLEJ14uiul067Doy0k9gaa1')
+            self.assertEqual(sr.getvalue(), '+OK *MDAwMDAwMDDN/2S09F4Jq10qXkgYPpJ8')
 
     @mock.patch('builtins.print')
     def test_decrypt(self, print_):
         with mock.patch('hexfish.plugin.add_color', side_effect=lambda color, text: text):
             sr = io.StringIO()
             print_.side_effect = lambda x: sr.write(x)
-            hexfish_commands.decrypt(SimpleNamespace(nick='nick1@network1', unparsed='+OK o8Ohb/ew2rg/lcLsU/OUv8Q0'))
+            hexfish_commands.decrypt(SimpleNamespace(nick='nick1@network1', unparsed='+OK 7M7bZ.8IFOz/mzvAm/ZvN7X0'))
             self.assertEqual(sr.getvalue(), 'some text')
 
     @mock.patch('builtins.print')
@@ -135,6 +134,6 @@ class TestHexFishCommands(unittest.TestCase):
             sr = io.StringIO()
             print_.side_effect = lambda x: sr.write(x)
             hexfish_commands.decrypt(SimpleNamespace(
-                nick='nick1@network1', unparsed='+OK *K.1aK.K.1aK.dcLEJ14uiul067Doy0k9gaa1'
+                nick='nick1@network1', unparsed='+OK *MDAwMDAwMDDN/2S09F4Jq10qXkgYPpJ8'
             ))
             self.assertEqual(sr.getvalue(), 'some text')

@@ -5,6 +5,8 @@ Placeholder file for unit tests.
 
 import os
 
+PRI_HIGHEST = None
+
 
 def get_info(name):
     if name == 'configdir':
@@ -12,6 +14,14 @@ def get_info(name):
 
 
 def hook_command(*args, **kwargs):
+    pass
+
+
+def hook_print(*args, **kwargs):
+    pass
+
+
+def hook_server(*args, **kwargs):
     pass
 
 
