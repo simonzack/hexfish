@@ -3,7 +3,9 @@
 mircrypt/blowcrypt/FiSH encryption
 '''
 
+import base64
 import struct
+import binascii
 
 from Crypto.Cipher import Blowfish
 
@@ -21,6 +23,39 @@ class BlowCryptBase:
         if not 8 <= len(key) <= 56:
             raise ValueError('8 <= len(key) <= 56')
         self.blowfish = Blowfish.new(key)
+
+    @classmethod
+    def b64encode(cls, s):
+        raise NotImplementedError
+
+    @classmethod
+    def b64decode(cls, s, partial=False):
+        raise NotImplementedError
+
+    def pack(self, msg):
+        '''
+        Get the irc string to send.
+        '''
+        return '{}{}'.format(self.send_prefix, self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
+
+    def unpack(self, msg, partial=False):
+        try:
+            prefix = next(prefix for prefix in self.receive_prefixes if msg.startswith(prefix))
+        except StopIteration:
+            raise ValueError
+        body = msg[len(prefix):]
+        return self.decrypt(self.b64decode(body.encode(), partial)).strip(b'\x00').decode('utf-8', 'ignore')
+
+    def encrypt(self, msg):
+        raise NotImplementedError
+
+    def decrypt(self, msg):
+        raise NotImplementedError
+
+
+class BlowCrypt(BlowCryptBase):
+    send_prefix = '+OK '
+    receive_prefixes = ['+OK ', 'mcps ']
 
     @classmethod
     def b64encode(cls, s):
@@ -58,31 +93,6 @@ class BlowCryptBase:
                 raise
         return bytes(res)
 
-    def pack(self, msg):
-        '''
-        Get the irc string to send.
-        '''
-        return '{}{}'.format(self.send_prefix, self.b64encode(self.encrypt(pad_to(msg.encode(), 8))).decode())
-
-    def unpack(self, msg, partial=False):
-        try:
-            prefix = next(prefix for prefix in self.receive_prefixes if msg.startswith(prefix))
-        except StopIteration:
-            raise ValueError
-        body = msg[len(prefix):]
-        return self.decrypt(self.b64decode(body.encode(), partial)).strip(b'\x00').decode('utf-8', 'ignore')
-
-    def encrypt(self, msg):
-        raise NotImplementedError
-
-    def decrypt(self, msg):
-        raise NotImplementedError
-
-
-class BlowCrypt(BlowCryptBase):
-    send_prefix = '+OK '
-    receive_prefixes = ['+OK ', 'mcps ']
-
     def encrypt(self, data):
         return self.blowfish.encrypt(data)
 
@@ -93,6 +103,16 @@ class BlowCrypt(BlowCryptBase):
 class BlowCryptCBC(BlowCryptBase):
     send_prefix = '+OK *'
     receive_prefixes = ['+OK *', 'mcps *']
+
+    @classmethod
+    def b64encode(cls, s):
+        if len(s) % 8 != 0:
+            raise ValueError
+        return base64.b64encode(s)
+
+    @classmethod
+    def b64decode(cls, s, partial=False):
+        return base64.b64decode(s, validate=True)
 
     def encrypt(self, data):
         return cbc_encrypt(self.blowfish.encrypt, data, 8)

@@ -4,7 +4,7 @@ import unittest
 from hexfish.blowcrypt import *
 
 
-class TestBlowCryptBase(unittest.TestCase):
+class TestBlowCrypt(unittest.TestCase):
     def test_b64encode(self):
         self.assertEqual(BlowCrypt.b64encode(b''), b'')
         self.assertEqual(BlowCrypt.b64encode(b'11223344'), b'OeNaN.M6haL.')
@@ -22,3 +22,15 @@ class TestBlowCryptBase(unittest.TestCase):
             BlowCrypt.b64decode(b'~'*12)
         self.assertEqual(BlowCrypt.b64decode(b'OeNaN.M6haL.' + b'1', True), b'11223344')
         self.assertEqual(BlowCrypt.b64decode(b'OeNaN.M6haL.' + b'~'*12, True), b'11223344')
+
+
+class TestBlowCryptCBC(unittest.TestCase):
+    def test_b64encode(self):
+        self.assertEqual(BlowCryptCBC.b64encode(b'11223344'), b'MTEyMjMzNDQ=')
+
+    def test_b64decode(self):
+        self.assertEqual(BlowCryptCBC.b64decode(b'MTEyMjMzNDQ='), b'11223344')
+        with self.assertRaises(ValueError):
+            BlowCryptCBC.b64decode(b'1')
+        with self.assertRaises(ValueError):
+            BlowCryptCBC.b64decode(b'~')
