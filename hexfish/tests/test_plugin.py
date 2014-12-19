@@ -1,5 +1,4 @@
 
-import builtins  # noinspection PyUnresolvedReferences
 import io
 import os
 import textwrap
@@ -52,7 +51,7 @@ class TestHexFishCommands(unittest.TestCase):
             'nick1@network1', 'nick2@network2'
         ])
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_show_key(self, print_):
         sr = io.StringIO()
         print_.side_effect = lambda x: sr.write(x)
@@ -64,7 +63,7 @@ class TestHexFishCommands(unittest.TestCase):
             nick2@network2  blowcrypt*  True*  False*       True*     False*     False*     22222222
         ''').strip())
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_set_key(self, print_):
         with mock.patch('hexfish.plugin.config.create_id', return_value=str(uuid.UUID(int=3))), self.assert_dumped():
             hexfish_commands.set_key(SimpleNamespace(
@@ -73,7 +72,7 @@ class TestHexFishCommands(unittest.TestCase):
             self.assertEqual(config['nick_id', 'nick3@network3'], str(uuid.UUID(int=3)))
             self.assertEqual(config['id_key', str(uuid.UUID(int=3))], 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=')
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_del_key(self, print_):
         with mock.patch('hexfish.plugin.config.create_id', return_value=str(uuid.UUID(int=3))), self.assert_dumped():
             prev_nick_id = config[('nick_id',)].copy()
@@ -83,7 +82,7 @@ class TestHexFishCommands(unittest.TestCase):
             self.assertEqual(config[('id_config',)], prev_id_config)
             self.assertEqual(config.has('id_key'), 1)
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_config_key_str(self, print_):
         with self.assert_dumped():
             hexfish_commands.config_key(SimpleNamespace(nick='nick*@network*', key='cipher', value='some_cipher'))
@@ -92,7 +91,7 @@ class TestHexFishCommands(unittest.TestCase):
                 str(uuid.UUID(int=2)): {'cipher': 'some_cipher'}
             })
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_config_key_bool(self, print_):
         with self.assert_dumped():
             hexfish_commands.config_key(SimpleNamespace(nick='nick*@network*', key='cbc', value='1'))
@@ -101,7 +100,7 @@ class TestHexFishCommands(unittest.TestCase):
                 str(uuid.UUID(int=2)): {'cbc': True}
             })
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_encrypt(self, print_):
         with mock.patch('hexfish.plugin.add_color', side_effect=lambda color, text: text):
             sr = io.StringIO()
@@ -110,7 +109,7 @@ class TestHexFishCommands(unittest.TestCase):
             hexfish_commands.encrypt(SimpleNamespace(nick='nick1@network1', unparsed='some text'))
             self.assertEqual(sr.getvalue(), '+OK 7M7bZ.8IFOz/mzvAm/ZvN7X0')
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_encrypt_cbc(self, print_):
         with mock.patch('hexfish.plugin.add_color', side_effect=lambda color, text: text),\
                 mock.patch('os.urandom', return_value=b'0'*8):
@@ -120,7 +119,7 @@ class TestHexFishCommands(unittest.TestCase):
             hexfish_commands.encrypt(SimpleNamespace(nick='nick1@network1', unparsed='some text'))
             self.assertEqual(sr.getvalue(), '+OK *MDAwMDAwMDDN/2S09F4Jq10qXkgYPpJ8')
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_decrypt(self, print_):
         with mock.patch('hexfish.plugin.add_color', side_effect=lambda color, text: text):
             sr = io.StringIO()
@@ -128,7 +127,7 @@ class TestHexFishCommands(unittest.TestCase):
             hexfish_commands.decrypt(SimpleNamespace(nick='nick1@network1', unparsed='+OK 7M7bZ.8IFOz/mzvAm/ZvN7X0'))
             self.assertEqual(sr.getvalue(), 'some text')
 
-    @mock.patch('builtins.print')
+    @mock.patch('hexfish.plugin.print', create=True)
     def test_decrypt_cbc(self, print_):
         with mock.patch('hexfish.plugin.add_color', side_effect=lambda color, text: text):
             sr = io.StringIO()
