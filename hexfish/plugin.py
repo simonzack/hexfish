@@ -65,6 +65,7 @@ class HexFishCommands:
 
     def main(self, word, word_eol, userdata):
         args = None
+        print('/{}'.format(word_eol[0]))
         with suppress(ValueError):
             args = self.arg_parser.parse_args(word[1:])
         if args is not None:
