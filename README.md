@@ -1,17 +1,20 @@
-py-fishcrypt
-============
+# HexFish
 
-FiSH/MirCryption-compatible encryption for xchat/hexchat written in 100% pure python.
+HexFish is a FiSH/MirCryption-compatible python 3 encryption plugin for xchat/hexchat written in 100% pure python.
 
-This is a branch off py-fishcrypt with python 3 support and various improvements (see commit logs).
+## Features
 
-Requirements
-------------
-PyCrypto, Python 3
+- Cipher-block chaining (CBC) key exchange setting & encryption.
+- `/me` `/msg` `/notice` encryption & decryption.
+- Key exchange protection.
+- Stealth mode (don't reply to key exchanges).
+- Nick aliases for nick changes.
 
-Authors
--------
-- Copyright 2009 Bjorn Edstrom (http://www.bjrn.se/ircsrp) with modification from Nam T. Nguyen and trubo
-- Copyright 2011 Nam T. Nguyen (http://www.vithon.org/forum/Thread/show/54)
-- Copyright 2012-2013 trubo/segfault (re-written for irc.prooops.eu #py-fishcrypt trubo00@gmail.com)
-- Copyright 2014 simonzack
+## Configuration
+The config file, `fish.json` is located in the hexchat configuration directory. See `config.py` for the default settings.
+
+## Dependencies
+PyCrypto, tabulate
+
+## Authors
+Written by simonzack, originally inspired by py-fishcrypt.
