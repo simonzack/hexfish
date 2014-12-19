@@ -204,18 +204,18 @@ class HexFishCommands:
 hexfish_commands = HexFishCommands()
 
 
-class HexFishCommand:
+class HexFishHook:
     def __init__(self):
         self.in_raw_context = False
         self.context_return_value = None
 
-    def skippable(self, func):
-        def decorated(*args, **kwargs):
-            if self.in_raw_context:
-                return self.context_return_value
-            return func(*args, **kwargs)
+    @staticmethod
+    def delay(timeout, func, *args, **kwargs):
+        def hook_func(userdata_):
+            func(*args, **kwargs)
+            xchat.unhook(hook)
 
-        return decorated
+        hook = xchat.hook_timer(timeout, hook_func)
 
     @contextmanager
     def skip_print(self, name):
@@ -226,6 +226,14 @@ class HexFishCommand:
         yield
         xchat.unhook(hook)
 
+    def skippable(self, func):
+        def decorated(*args, **kwargs):
+            if self.in_raw_context:
+                return self.context_return_value
+            return func(*args, **kwargs)
+
+        return decorated
+
     @contextmanager
     def raw_command(self, return_value):
         self.in_raw_context = True
@@ -233,7 +241,7 @@ class HexFishCommand:
         yield
         self.in_raw_context = False
 
-hexfish_command = HexFishCommand()
+hexfish_hook = HexFishHook()
 
 
 class HexFish:
@@ -292,14 +300,6 @@ class HexFish:
                 xchat.command('GUI COLOR 3')
         context.emit_print(event_name, nick, msg, *args)
 
-    @staticmethod
-    def delay(timeout, func, *args, **kwargs):
-        def hook_func(userdata_):
-            func(*args, **kwargs)
-            xchat.unhook(hook)
-
-        hook = xchat.hook_timer(timeout, hook_func)
-
     def dh1080_exchange(self, nick):
         '''
         Initiate a key exchange.
@@ -312,7 +312,7 @@ class HexFish:
             return
         self.id_dh[config['nick_id', nick]] = DH1080()
         dh = self.id_dh[config['nick_id', nick]]
-        with hexfish_command.raw_command(xchat.EAT_NONE):
+        with hexfish_hook.raw_command(xchat.EAT_NONE):
             xchat.command('NOTICE {} {}'.format(
                 nick.split('@')[0], dh.send_request(config['id_config', config['nick_id', nick], 'cbc']))
             )
@@ -327,7 +327,7 @@ class HexFish:
         if not config.has('nick_id', nick):
             config['nick_id', nick] = config.create_id()
         if config['id_config', config['nick_id', nick], 'protect']:
-            with hexfish_command.raw_command(xchat.EAT_NONE):
+            with hexfish_hook.raw_command(xchat.EAT_NONE):
                 xchat.command('NOTICE {} {}'.format(
                     nick.split('@')[0], self.add_plaintext(add_color('red', 'key protection is on, exchange denied')))
                 )
@@ -344,7 +344,7 @@ class HexFish:
         except ValueError as e:
             print(e)
             return
-        with hexfish_command.raw_command(xchat.EAT_NONE):
+        with hexfish_hook.raw_command(xchat.EAT_NONE):
             xchat.command('NOTICE {} {}'.format(nick.split('@')[0], dh.send_response()))
         # check if dh was discarded
         if self.id_dh[config['nick_id', nick]] != dh:
@@ -381,10 +381,10 @@ class HexFish:
     def on_dh1080(self, nick, msg):
         # delay to display exchange status after the key exchange notice is printed
         if msg.startswith('DH1080_INIT'):
-            self.delay(0, self.on_dh1080_init, nick, msg)
+            hexfish_hook.delay(0, self.on_dh1080_init, nick, msg)
             return xchat.EAT_PLUGIN
         elif msg.startswith('DH1080_FINISH'):
-            self.delay(0, self.on_dh1080_finish, nick, msg)
+            hexfish_hook.delay(0, self.on_dh1080_finish, nick, msg)
             return xchat.EAT_PLUGIN
         else:
             raise ValueError
@@ -458,7 +458,7 @@ class HexFish:
         return xchat.EAT_NONE
 
     # noinspection PyUnreachableCode
-    @hexfish_command.skippable
+    @hexfish_hook.skippable
     def on_send_me(self, word, word_eol, userdata):
         if len(word) == 1:
             return xchat.EAT_NONE
@@ -467,12 +467,12 @@ class HexFish:
         with suppress(ValueError, KeyError):
             msg_ = self.encrypt(nick, msg)
             self.emit_print('Your Action', xchat.get_info('nick'), msg)
-            with hexfish_command.raw_command(xchat.EAT_NONE), hexfish_command.skip_print('Your Action'):
+            with hexfish_hook.raw_command(xchat.EAT_NONE), hexfish_hook.skip_print('Your Action'):
                 xchat.command('ME {}'.format(msg_))
             return xchat.EAT_XCHAT
         return xchat.EAT_NONE
 
-    @hexfish_command.skippable
+    @hexfish_hook.skippable
     def on_send_msg(self, word, word_eol, userdata):
         context = xchat.find_context(channel=word[1])
         if context:
@@ -481,12 +481,12 @@ class HexFish:
             with suppress(ValueError, KeyError):
                 msg_ = self.encrypt(nick, msg)
                 self.emit_print('Your Message', xchat.get_info('nick'), msg, context=context)
-                with hexfish_command.raw_command(xchat.EAT_NONE), hexfish_command.skip_print('Your Message'):
+                with hexfish_hook.raw_command(xchat.EAT_NONE), hexfish_hook.skip_print('Your Message'):
                     xchat.command('MSG {} {}'.format(nick.split('@')[0], msg_))
                 return xchat.EAT_XCHAT
         return xchat.EAT_NONE
 
-    @hexfish_command.skippable
+    @hexfish_hook.skippable
     def on_send_notice(self, word, word_eol, userdata):
         context = xchat.find_context(channel=word[1])
         if context:
@@ -495,7 +495,7 @@ class HexFish:
             with suppress(ValueError, KeyError):
                 msg_ = self.encrypt(nick, msg)
                 self.emit_print('Notice Send', nick.split('@')[0], msg)
-                with hexfish_command.raw_command(xchat.EAT_NONE), hexfish_command.skip_print('Notice Send'):
+                with hexfish_hook.raw_command(xchat.EAT_NONE), hexfish_hook.skip_print('Notice Send'):
                     xchat.command('NOTICE {} {}'.format(nick.split('@')[0], msg_))
                 return xchat.EAT_XCHAT
         return xchat.EAT_NONE
