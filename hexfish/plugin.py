@@ -388,8 +388,9 @@ class HexFish:
         else:
             raise ValueError
 
-    @staticmethod
-    def encrypt(nick, msg):
+    def encrypt(self, nick, msg):
+        if msg.startswith(self.plain_prefix):
+            return msg[len(self.plain_prefix):]
         if not config['id_config', config['nick_id', nick], 'active']:
             raise ValueError
         key = config['id_key', config['nick_id', nick]]
@@ -402,7 +403,7 @@ class HexFish:
     # noinspection PyUnreachableCode
     def decrypt(self, nick, msg):
         if msg.startswith(self.plain_prefix):
-            raise ValueError
+            return msg
         key = config['id_key', config['nick_id', nick]]
         cls = find_msg_cls(msg)
         with suppress(ValueError):
@@ -411,9 +412,8 @@ class HexFish:
             res = cls(key).unpack(msg, True)
             print('partially decrypted {!r}'.format(msg))
             return '{}{}'.format(res, add_color('yellow', '<incomplete>'))
-        with suppress(ValueError):
-            print('could not decrypt {!r}'.format(msg))
-            return msg
+        print('could not decrypt {!r}'.format(msg))
+        return msg
 
     # noinspection PyUnreachableCode
     def on_recv_message(self, word, word_eol, userdata):
