@@ -119,7 +119,10 @@ class HexFishCommands:
             for header in headers:
                 key = ('id_config', config['nick_id', nick], header)
                 row.append(str(config[key]) + ('*' if config.has(*key) == 1 else ''))
-            row.append(config['id_key', config['nick_id', nick]] if nick != '*default@' else '')
+            try:
+                row.append(config['id_key', config['nick_id', nick]])
+            except KeyError:
+                row.append('')
             table.append(row)
         print(tabulate(table, headers='firstrow'))
 
@@ -307,6 +310,8 @@ class HexFish:
         if nick.startswith('#'):
             print('can\'t exchange keys with a channel')
             return
+        if not config.has('nick_id', nick):
+            config['nick_id', nick] = config.create_id()
         if config['id_config', config['nick_id', nick], 'protect']:
             print(add_color('red', 'key protection is on for {}, exchange denied'.format(format_nick(nick))))
             return
@@ -323,7 +328,6 @@ class HexFish:
         Reply to key exchange initiated by somebody else. Key exchanges already in progress are assumed to have failed
         (e.g. network problems) and discarded.
         '''
-        # create nick id if it doesn't exist
         if not config.has('nick_id', nick):
             config['nick_id', nick] = config.create_id()
         if config['id_config', config['nick_id', nick], 'protect']:
