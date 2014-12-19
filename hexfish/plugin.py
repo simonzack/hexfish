@@ -14,7 +14,7 @@ from hexfish.text import add_color, add_style
 __all__ = ['__module_name__', '__module_version__', '__module_description__', 'config', 'hexfish_commands', 'hexfish']
 
 __module_name__ = 'hexfish'
-__module_version__ = '5.00b'
+__module_version__ = '1.00'
 __module_description__ = 'Fish encryption in pure python.'
 
 config = Config.load()
