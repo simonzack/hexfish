@@ -6,7 +6,6 @@ irc blowfish dh-1080 encoding/decoding
 import base64
 import hashlib
 import os
-import textwrap
 
 from hexfish.crypto import bytes_to_int, int_to_bytes
 

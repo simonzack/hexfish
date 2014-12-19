@@ -5,10 +5,8 @@ mircrypt/blowcrypt/FiSH encryption
 
 import base64
 import struct
-import binascii
 
 from Crypto.Cipher import Blowfish
-
 from hexfish.crypto import cbc_decrypt, cbc_encrypt, pad_to
 
 __all__ = ['BlowCrypt', 'BlowCryptCBC', 'find_msg_cls']

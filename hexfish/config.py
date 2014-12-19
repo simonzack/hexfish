@@ -129,5 +129,6 @@ class Config:
                 config.pop(key)
             config = prev_config
 
-    def create_id(self):
+    @staticmethod
+    def create_id():
         return str(uuid.uuid4())

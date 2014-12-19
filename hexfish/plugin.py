@@ -4,12 +4,11 @@ import re
 from contextlib import contextmanager, suppress
 
 import xchat
-from tabulate import tabulate
-
 from hexfish.blowcrypt import BlowCrypt, BlowCryptCBC, find_msg_cls
 from hexfish.config import Config
 from hexfish.dh1080 import DH1080
 from hexfish.text import add_color, add_style
+from tabulate import tabulate
 
 __all__ = ['__module_name__', '__module_version__', '__module_description__', 'config', 'hexfish_commands', 'hexfish']
 
