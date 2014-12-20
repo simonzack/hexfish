@@ -16,7 +16,7 @@ class Config:
     default_config = {
         # each nick (nick@network) has a single alias to an id (aliases can possibly create a security problem)
         'nick_id': {'*default@': str(uuid.UUID(int=0))},
-        # maps id to base64-encoded keys
+        # maps id to utf8-encoded keys
         'id_key': {},
         # maps id to key config
         'id_config': {
