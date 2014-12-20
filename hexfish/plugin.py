@@ -275,10 +275,6 @@ class HexFish:
         for hook in self.hooks:
             xchat.unhook(hook)
 
-    @classmethod
-    def add_plaintext(cls, msg):
-        return '{}{}'.format(cls.plain_prefix, msg)
-
     @staticmethod
     def get_nick(first_word=None, network=None):
         '''
@@ -331,10 +327,9 @@ class HexFish:
         if not config.has('nick_id', nick):
             config['nick_id', nick] = config.create_id()
         if config['id_config', config['nick_id', nick], 'protect']:
-            with hexfish_hook.raw_command(xchat.EAT_NONE):
-                xchat.command('NOTICE {} {}'.format(
-                    nick.split('@')[0], self.add_plaintext(add_color('red', 'key protection is on, exchange denied')))
-                )
+            xchat.command('NOTICE {} {}'.format(
+                nick.split('@')[0], add_color('red', 'key protection is on, exchange denied'))
+            )
             print(add_color('red', 'key protection is on for {}, exchange denied'.format(format_nick(nick))))
             return
         if config['id_config', config['nick_id', nick], 'stealth']:
