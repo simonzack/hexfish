@@ -1,4 +1,3 @@
-
 '''
 irc blowfish dh-1080 encoding/decoding
 '''

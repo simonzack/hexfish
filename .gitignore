@@ -1,9 +1,9 @@
-
-# ide files
-.idea
-
-# caches
-__pycache__
+# pycharm
+/.idea/**/workspace.xml
+/venv/
 
 # unit test
-/tmp
+/tmp/
+
+# caches
+__pycache__/

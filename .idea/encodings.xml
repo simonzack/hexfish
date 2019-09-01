@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding" useUTFGuessing="true" native2AsciiForPropertiesFiles="false">
+    <file url="file://$PROJECT_DIR$/hexfish/__init__.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/blowcrypt.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/config.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/crypto.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/dh1080.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/plugin.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/tests/test_blowcrypt.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/tests/test_config.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/tests/test_plugin.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/text.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/hexfish/xchat.py" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/setup.py" charset="UTF-8" />
+  </component>
+</project>

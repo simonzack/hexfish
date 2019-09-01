@@ -1,4 +1,3 @@
-
 __all__ = ['add_style', 'add_color']
 
 STYLE = {

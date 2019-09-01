@@ -1,4 +1,3 @@
-
 '''
 mircrypt/blowcrypt/FiSH encryption
 '''
@@ -20,7 +19,7 @@ class BlowCryptBase:
     def __init__(self, key=None):
         if not 8 <= len(key) <= 56:
             raise ValueError('8 <= len(key) <= 56')
-        self.blowfish = Blowfish.new(key)
+        self.blowfish = Blowfish.new(key.encode(), Blowfish.MODE_ECB)
 
     @classmethod
     def b64encode(cls, s):

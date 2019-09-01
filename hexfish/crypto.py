@@ -1,4 +1,3 @@
-
 import os
 
 from Crypto.Util.strxor import strxor

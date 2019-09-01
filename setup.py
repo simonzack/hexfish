@@ -1,12 +1,17 @@
-
-from setuptools import find_packages, setup
+from setuptools import setup
 
 setup(
     name='hexfish',
-    description='Hexchat Fish',
-
+    version='1.0',
+    description='Python 3 fish encryption plugin for hexchat',
+    url='https://github.com/simonzack/hexfish',
     author='simonzack',
     author_email='simonzack@gmail.com',
-
-    packages=find_packages()
+    license='MIT',
+    packages=['hexfish'],
+    install_requires=[
+        'pycryptodome==3.9.0',
+        'tabulate==0.8.3',
+    ],
+    zip_safe=False
 )
