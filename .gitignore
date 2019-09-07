@@ -1,6 +1,5 @@
 # pycharm
 /.idea/**/workspace.xml
-/venv/
 
 # unit test
 /tmp/
