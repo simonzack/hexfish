@@ -10,8 +10,8 @@ setup(
     license='MIT',
     packages=['hexfish'],
     install_requires=[
-        'pycryptodome==3.9.3',
-        'tabulate==0.8.6',
+        'pycryptodome==3.9.9',
+        'tabulate==0.8.7',
     ],
     zip_safe=False
 )
