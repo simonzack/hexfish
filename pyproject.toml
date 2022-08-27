@@ -1,0 +1,24 @@
+[project]
+version = "1.0"
+description = "Python fish encryption plugin for hexchat"
+authors = [
+    {name = "simonzack", email = "simonzack@gmail.com"},
+]
+dependencies = [
+    "pycryptodome==3.15.0",
+    "tabulate==0.8.10",
+]
+requires-python = ">=3.10"
+license = {text = "MIT"}
+readme = "readme.md"
+
+[project.urls]
+Homepage = "https://github.com/simonzack/hexfish"
+
+[build-system]
+requires = [
+    "pdm-pep517>=1.0.0",
+]
+build-backend = "pdm.pep517.api"
+
+[tool.pdm]

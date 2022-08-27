@@ -1,8 +1,11 @@
-# pycharm
-/.idea/**/workspace.xml
-
-# unit test
-/tmp/
-
-# caches
 __pycache__/
+
+# *PyCharm*
+/.idea/
+
+# *PDM*
+/.pdm.toml
+/__pypackages__/
+
+# Unit tests
+/tmp/
