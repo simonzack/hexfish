@@ -289,14 +289,16 @@ class HexFish:
     def emit_print(event_name, nick, msg, *args, context=None):
         if not context:
             context = xchat.get_context()
+        color = '2'
         for highlight in [xchat.get_info('nick')] + xchat.get_prefs('irc_extra_hilight').split(','):
             if highlight and highlight in msg:
                 if event_name == 'Channel Message':
                     event_name = 'Channel Msg Hilight'
                 elif event_name == 'Channel Action':
                     event_name = 'Channel Action Hilight'
-                xchat.command('GUI COLOR 3')
+                color = '3'
         context.emit_print(event_name, nick, msg, *args)
+        xchat.command('GUI COLOR {}'.format(color))
 
     def dh1080_exchange(self, nick):
         '''
