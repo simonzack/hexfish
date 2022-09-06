@@ -257,6 +257,8 @@ class HexFish:
             xchat.hook_command('ME', self.on_send_me),
             xchat.hook_command('MSG', self.on_send_msg),
             xchat.hook_command('NOTICE', self.on_send_notice),
+            xchat.hook_server('332', self.on_recv_332, priority=xchat.PRI_HIGHEST),
+            xchat.hook_server('TOPIC', self.on_recv_topic, priority=xchat.PRI_HIGHEST),
             xchat.hook_server('notice', self.on_recv_notice, priority=xchat.PRI_HIGHEST),
             xchat.hook_print('Change Nick', self.on_change_nick),
             xchat.hook_unload(self.unload),
@@ -442,6 +444,50 @@ class HexFish:
             msg = self.decrypt(nick, msg)
             self.emit_print('Notice', nick.split('@')[0], msg)
             return xchat.EAT_XCHAT
+        return xchat.EAT_NONE
+
+    # noinspection PyUnreachableCode
+    def on_recv_topic(self, word, word_eol, userdata):
+        server, cmd, nick = word[0], word[1], word[2]
+        key_nick = self.get_nick()
+        topic = word_eol[3][1:].strip()
+
+        key = None
+        try:
+            key = config['id_key', config['nick_id', key_nick]]
+        except Exception:
+            return xchat.EAT_NONE
+
+        if not key or not topic.startswith('+OK'):
+            return xchat.EAT_NONE
+
+        with suppress(ValueError, KeyError):
+            topic = self.decrypt(key_nick, topic)
+            xchat.command('RECV %s %s %s :%s' % (server, cmd, nick, topic))
+            return xchat.EAT_ALL
+
+        return xchat.EAT_NONE
+
+    # noinspection PyUnreachableCode
+    def on_recv_332(self, word, word_eol, userdata):
+        server, cmd, nick, channel, topic = word[0], word[1], word[2], word[3], word_eol[4]
+        topic = topic[1:]
+        key_nick = self.get_nick()
+
+        key = None
+        try:
+            key = config['id_key', config['nick_id', key_nick]]
+        except Exception:
+            return xchat.EAT_NONE
+
+        if not key or not topic.startswith('+OK'):
+            return xchat.EAT_NONE
+
+        with suppress(ValueError, KeyError):
+            topic = self.decrypt(key_nick, topic)
+            xchat.command('RECV %s %s %s %s :%s' % (server, cmd, nick, channel, topic))
+            return xchat.EAT_ALL
+
         return xchat.EAT_NONE
 
     # noinspection PyUnreachableCode
