@@ -257,7 +257,7 @@ class HexFish:
             xchat.hook_command('ME', self.on_send_me),
             xchat.hook_command('MSG', self.on_send_msg),
             xchat.hook_command('NOTICE', self.on_send_notice),
-            xchat.hook_server('notice', self.on_recv_notice, priority=xchat.PRI_HIGHEST),
+            xchat.hook_server_attrs('notice', self.on_recv_notice, priority=xchat.PRI_HIGHEST),
             xchat.hook_print('Change Nick', self.on_change_nick),
             xchat.hook_unload(self.unload),
         ]
@@ -265,7 +265,7 @@ class HexFish:
             'Channel Action', 'Private Action to Dialog', 'Private Action', 'Channel Message',
             'Private Message to Dialog', 'Private Message'
         ):
-            xchat.hook_print(name, self.on_recv_message, name, priority=xchat.PRI_HIGHEST),
+            xchat.hook_print_attrs(name, self.on_recv_message, name, priority=xchat.PRI_HIGHEST),
 
     def unload(self, userdata):
         del self
@@ -286,7 +286,8 @@ class HexFish:
         return '{}@{}'.format(nick, network or xchat.get_info('network'))
 
     @staticmethod
-    def emit_print(event_name, nick, msg, *args, context=None):
+    def emit_print(event_name, nick, msg, *args, **kwargs):
+        context = kwargs.pop('context', None)
         if not context:
             context = xchat.get_context()
         for highlight in [xchat.get_info('nick')] + xchat.get_prefs('irc_extra_hilight').split(','):
@@ -296,7 +297,7 @@ class HexFish:
                 elif event_name == 'Channel Action':
                     event_name = 'Channel Action Hilight'
                 xchat.command('GUI COLOR 3')
-        context.emit_print(event_name, nick, msg, *args)
+        context.emit_print(event_name, nick, msg, *args, **kwargs)
 
     def dh1080_exchange(self, nick):
         '''
@@ -415,7 +416,7 @@ class HexFish:
         return msg
 
     # noinspection PyUnreachableCode
-    def on_recv_message(self, word, word_eol, userdata):
+    def on_recv_message(self, word, word_eol, userdata, attrs):
         nick = self.get_nick(word[0][1:])
         key_nick = self.get_nick() if self.get_nick().startswith('#') else self.get_nick(word[0])
         msg = word_eol[1]
@@ -424,12 +425,12 @@ class HexFish:
             msg = msg[:-2]
         with suppress(ValueError, KeyError):
             msg = self.decrypt(key_nick, msg)
-            self.emit_print(userdata, nick.split('@')[0], msg)
+            self.emit_print(userdata, nick.split('@')[0], msg, time=attrs.time)
             return xchat.EAT_XCHAT
         return xchat.EAT_NONE
 
     # noinspection PyUnreachableCode
-    def on_recv_notice(self, word, word_eol, userdata):
+    def on_recv_notice(self, word, word_eol, userdata, attrs):
         nick = self.get_nick(word[0][1:])
         msg = word_eol[3]
         for prefix in (':-', ':'):
@@ -440,7 +441,7 @@ class HexFish:
             return self.on_dh1080(nick, msg)
         with suppress(ValueError, KeyError):
             msg = self.decrypt(nick, msg)
-            self.emit_print('Notice', nick.split('@')[0], msg)
+            self.emit_print('Notice', nick.split('@')[0], msg, time=attrs.time)
             return xchat.EAT_XCHAT
         return xchat.EAT_NONE
 
